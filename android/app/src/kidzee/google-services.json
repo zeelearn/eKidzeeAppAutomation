@@ -1,0 +1,303 @@
+{
+  "project_info": {
+    "project_number": "66383917412",
+    "firebase_url": "https://kidzeeandroidapp-91faf.firebaseio.com",
+    "project_id": "kidzeeandroidapp-91faf",
+    "storage_bucket": "kidzeeandroidapp-91faf.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:66383917412:android:c8c4e3f9b827376c",
+        "android_client_info": {
+          "package_name": "com.example.kltapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "66383917412-ik791vo7q8bg7nqgap3tpumc3iojpksa.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.kltapp",
+            "certificate_hash": "f20a63cb0b11468d3497726d68d4500e798b05d0"
+          }
+        },
+        {
+          "client_id": "66383917412-cvrbvjiasveggklm8kb1mo74dd3rb8lq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLy7C69KVA6inKnpAkNc5g8WL1EMURLws"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "66383917412-5d1etioa7q372m8g8cag2pvmvnvjl41r.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "66383917412-b8235k1t8o9m2rsndo5tc9btlji34rh0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.zeelearn.ekidzee"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:66383917412:android:88d0cf3f0a40345f",
+        "android_client_info": {
+          "package_name": "com.innova.eplusmlz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "66383917412-cvrbvjiasveggklm8kb1mo74dd3rb8lq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLy7C69KVA6inKnpAkNc5g8WL1EMURLws"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "66383917412-5d1etioa7q372m8g8cag2pvmvnvjl41r.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "66383917412-b8235k1t8o9m2rsndo5tc9btlji34rh0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.zeelearn.ekidzee"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:66383917412:android:83845d243e010a05",
+        "android_client_info": {
+          "package_name": "com.zeelearn.MLWPS"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "66383917412-1qje125a4g2aps5995h3hebpv6bd916c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zeelearn.MLWPS",
+            "certificate_hash": "f20a63cb0b11468d3497726d68d4500e798b05d0"
+          }
+        },
+        {
+          "client_id": "66383917412-cvrbvjiasveggklm8kb1mo74dd3rb8lq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLy7C69KVA6inKnpAkNc5g8WL1EMURLws"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "66383917412-5d1etioa7q372m8g8cag2pvmvnvjl41r.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "66383917412-b8235k1t8o9m2rsndo5tc9btlji34rh0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.zeelearn.ekidzee"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:66383917412:android:cad5aa524168ec6f",
+        "android_client_info": {
+          "package_name": "com.zeelearn.ekidzee"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "66383917412-621v61ia98blh11d4g22s3p87oijrgc0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zeelearn.ekidzee",
+            "certificate_hash": "1f3a3664d658ac4ccd368d2cb8c7377c84f5774e"
+          }
+        },
+        {
+          "client_id": "66383917412-cvrbvjiasveggklm8kb1mo74dd3rb8lq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLy7C69KVA6inKnpAkNc5g8WL1EMURLws"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "66383917412-5d1etioa7q372m8g8cag2pvmvnvjl41r.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "66383917412-b8235k1t8o9m2rsndo5tc9btlji34rh0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.zeelearn.ekidzee"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:66383917412:android:3940db9f92eaac3b",
+        "android_client_info": {
+          "package_name": "com.zeelearn.kidzeecoding"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "66383917412-cvrbvjiasveggklm8kb1mo74dd3rb8lq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLy7C69KVA6inKnpAkNc5g8WL1EMURLws"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "66383917412-5d1etioa7q372m8g8cag2pvmvnvjl41r.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "66383917412-b8235k1t8o9m2rsndo5tc9btlji34rh0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.zeelearn.ekidzee"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:66383917412:android:d6a1cbaad02baf1c",
+        "android_client_info": {
+          "package_name": "com.zeelearn.kltapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "66383917412-hf8kv1ckoqjqh5h4b5f70lcs1fipsiqa.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zeelearn.kltapp",
+            "certificate_hash": "f20a63cb0b11468d3497726d68d4500e798b05d0"
+          }
+        },
+        {
+          "client_id": "66383917412-cvrbvjiasveggklm8kb1mo74dd3rb8lq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLy7C69KVA6inKnpAkNc5g8WL1EMURLws"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "66383917412-5d1etioa7q372m8g8cag2pvmvnvjl41r.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "66383917412-b8235k1t8o9m2rsndo5tc9btlji34rh0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.zeelearn.ekidzee"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:66383917412:android:eb58a71f1ba4a64a",
+        "android_client_info": {
+          "package_name": "com.zeelearn.mlzslearningapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "66383917412-gbb1ip1cglh9pllt82750pvku4tfimmg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zeelearn.mlzslearningapp",
+            "certificate_hash": "f20a63cb0b11468d3497726d68d4500e798b05d0"
+          }
+        },
+        {
+          "client_id": "66383917412-cvrbvjiasveggklm8kb1mo74dd3rb8lq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLy7C69KVA6inKnpAkNc5g8WL1EMURLws"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "66383917412-5d1etioa7q372m8g8cag2pvmvnvjl41r.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "66383917412-b8235k1t8o9m2rsndo5tc9btlji34rh0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.zeelearn.ekidzee"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

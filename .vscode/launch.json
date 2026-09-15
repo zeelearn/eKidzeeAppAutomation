@@ -1,0 +1,59 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "kidzeeDev",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "debug",
+      "args": [
+        // "--device-id=RZ8T307M8LY",
+        "--flavor",
+        "kidzee",
+        "--target",
+        "lib/main.dart"
+      ],
+      "noDebug": true
+    },
+    {
+      "name": "kidzeeProfile",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "profile",
+      "args": [
+        "--flavor",
+        "kidzee",
+        "--target",
+        "lib/main.dart"
+      ]
+    },
+    {
+      "name": "kidzeeRelease",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "release",
+      "args": [
+        "--flavor",
+        "kidzee",
+        "--target",
+        "lib/main.dart"
+      ]
+    },
+    {
+      "name": "mlzs",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/mainmlzs.dart",
+      "args": [
+        "--flavor",
+        "mlzs",
+        "--target",
+        "lib/mainmlzls.dart"
+      ]
+    }
+  ],
+  "compounds": []
+}

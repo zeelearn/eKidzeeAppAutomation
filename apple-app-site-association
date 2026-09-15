@@ -1,0 +1,11 @@
+{
+  "applinks": {
+      "apps": [],
+      "details": [
+      {
+        "appID": "CNB6YMJ899.com.zeelearn.ekidzee",
+        "paths": ["*"]
+      }
+    ]
+  }
+}

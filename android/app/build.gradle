@@ -1,0 +1,201 @@
+plugins {
+    id "com.android.application"
+    // START: FlutterFire Configuration
+    id 'com.google.gms.google-services'
+    id 'com.google.firebase.crashlytics'
+    // END: FlutterFire Configuration
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+
+
+android {
+    namespace "com.zeelearn.ekidzee"
+    ndkVersion = "28.2.13676358"
+    // ndkVersion = "29.0.14033849"
+//    ndkVersion "27.2.12479018"
+    compileSdk 36
+
+
+   
+compileOptions {
+
+    coreLibraryDesugaringEnabled true
+
+    sourceCompatibility JavaVersion.VERSION_17
+
+    targetCompatibility JavaVersion.VERSION_17
+}
+
+kotlinOptions {
+
+    jvmTarget = "17"
+}
+
+
+    ext {
+        ndkVersion = "28.2.13676358"
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('..\\eKidzeeAppKey.jks')
+            storePassword 'nikunj'
+            keyAlias = 'nikunj'
+            keyPassword 'nikunj'
+        }
+
+        mlzsrelease {
+            storeFile file('..\\zeelearn.jks')
+            storePassword 'zils@1234'
+            keyAlias = 'mlzs'
+            keyPassword 'zils@1234'
+        }
+    }
+
+    defaultConfig {
+        multiDexEnabled true
+        // You can update the following values to match your application needs.
+        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-build-configuration.
+        minSdk = 26
+        targetSdk = 35
+
+        versionCode 223
+        versionName 'kidzee_2.8.0'
+        multiDexEnabled true
+        signingConfig signingConfigs.release
+        resConfigs "en" // Only include English resources
+        // ndk {
+        //     // Filter for architectures supported by Flutter.
+        //     abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
+        // }
+        ndk {
+            // arm64-v8a only for Play Store 16 KB page-size compliance.
+            abiFilters "arm64-v8a"
+        }
+    }
+
+
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../proguard-rules.pro'
+
+            firebaseCrashlytics {
+                mappingFileUploadEnabled true
+            }
+        }
+        debug {
+            minifyEnabled false
+            shrinkResources false
+            manifestPlaceholders['foregroundServiceType'] = 'location'
+        }
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = false
+            excludes += ['**/x86_64/**']
+        }
+        exclude "**/*.dbg.so"
+        pickFirst '../unityLibrary/intermediates/library_jni/debug/jni/arm64-v8a/libc++_shared.so'
+        pickFirst 'lib/arm64-v8a/libc++_shared.so'
+        // If there are other duplicate files, add them here
+    }
+
+    flavorDimensions "app"
+    productFlavors {
+        kidzee {
+            dimension "app"
+            resValue "string", "app_name", "Kidzee"
+            applicationId "com.zeelearn.ekidzee"
+            versionCode 231
+            versionName 'kidzee_2.8.4'
+            
+            def vName = versionName
+            def vCode = versionCode
+            //  manifestPlaceholders = [
+            //     APP_NAME: "Ekidzee_v${vName}${versionNameSuffix ?: ""}(${vCode})"
+            // ]
+        }
+
+        mlzs {
+            dimension "app"
+            resValue "string", "app_name", "MLZS Preprimary App"
+            applicationId "com.zeelearn.mlzsv1"
+            versionCode 16
+            versionName 'mlzs_2.1'
+            def vName = versionName
+            def vCode = versionCode
+
+            // manifestPlaceholders = [
+            //     APP_NAME: "MLZS_v${vName}(${vCode})"
+            // ]
+            signingConfig signingConfigs.mlzsrelease
+        }
+    }
+
+    configurations {
+        all*.exclude group: 'io.flutter.plugins.webviewflutter', module: 'BuildConfig'
+    }
+
+}
+
+// Print mapping file path after release builds for Play Console upload.
+tasks.configureEach { task ->
+    if (task.name ==~ /assemble.+Release/) {
+        task.doLast {
+            def variantName = task.name - 'assemble'
+            variantName = variantName.substring(0, 1).toLowerCase() + variantName.substring(1)
+            def mappingFile = file("${layout.buildDirectory.get().asFile}/outputs/mapping/${variantName}/mapping.txt")
+            if (mappingFile.exists()) {
+                println "R8 mapping file (${variantName}): ${mappingFile.absolutePath}"
+                println 'Upload to Play Console: Release > App bundle explorer > Assets > Deobfuscation file'
+            }
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {
+    //implementation("com.google.firebase:firebase-messaging")
+    implementation("androidx.multidex:multidex:2.0.1")
+    implementation "androidx.activity:activity:1.9.3"
+    implementation 'com.google.android.play:asset-delivery:2.2.2'
+    implementation 'com.google.android.material:material:1.6.0'
+    // For Kotlin users also add the Kotlin extensions library for Play Asset Delivery:
+    implementation 'com.google.android.play:asset-delivery-ktx:2.2.2'
+    implementation 'com.google.android.play:feature-delivery:2.1.0'
+    implementation "androidx.core:core-ktx:1.6.0"
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+
+    //implementation 'com.google.android.gms:play-services-integrity:1.5.0'
+
+
+    // For Kotlin users, also add the Kotlin extensions library for Play Feature Delivery:
+    implementation 'com.google.android.play:feature-delivery-ktx:2.1.0'
+
+    implementation(project(":unityLibrary"))
+    implementation(files("${project.rootDir}/unityLibrary/libs/VuforiaEngine.aar"))
+}
+
+
+
+
+
+
+

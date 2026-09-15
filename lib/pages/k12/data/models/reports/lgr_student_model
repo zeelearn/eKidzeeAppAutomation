@@ -1,0 +1,30 @@
+import '../../domain/entities/student.dart';
+
+class StudentModelForLGReport extends StudentForLGReport {
+  StudentModelForLGReport({
+    required int studentId,
+    required String studentName,
+    required int classId,
+    required String className,
+    required bool isSubmit,
+    required bool isPublish,
+  }) : super(
+          studentId: studentId,
+          studentName: studentName,
+          classId: classId,
+          className: className,
+          isSubmit: isSubmit,
+          isPublish: isPublish,
+        );
+
+  factory StudentModelForLGReport.fromJson(Map<String, dynamic> json) {
+    return StudentModelForLGReport(
+      studentId: json['student_id'],
+      studentName: json['Student_Name'],
+      classId: json['Class_Id'],
+      className: json['Class_Name'],
+      isSubmit: json['IsSubmit'],
+      isPublish: json['IsPublish'],
+    );
+  }
+}

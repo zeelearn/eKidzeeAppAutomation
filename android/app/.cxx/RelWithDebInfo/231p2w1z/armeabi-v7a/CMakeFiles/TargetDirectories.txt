@@ -1,0 +1,2 @@
+D:/vishwan/eKidzeeApp/android/app/.cxx/RelWithDebInfo/231p2w1z/armeabi-v7a/CMakeFiles/edit_cache.dir
+D:/vishwan/eKidzeeApp/android/app/.cxx/RelWithDebInfo/231p2w1z/armeabi-v7a/CMakeFiles/rebuild_cache.dir

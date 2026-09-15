@@ -1,0 +1,23 @@
+{
+  "images" : [
+    {
+      "filename" : "Simulator Screen Shot - iPhone 12 Pro Max - 2022-07-04 at 17.34.29.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
+    {
+      "filename" : "Simulator Screen Shot - iPhone 12 Pro Max - 2022-07-04 at 17.34.45.png",
+      "idiom" : "universal",
+      "scale" : "2x"
+    },
+    {
+      "filename" : "Simulator Screen Shot - iPhone 12 Pro Max - 2022-07-04 at 17.34.50.png",
+      "idiom" : "universal",
+      "scale" : "3x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
