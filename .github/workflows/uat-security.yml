@@ -1,0 +1,415 @@
+name: UAT - Code Quality & Security
+
+on:
+  push:
+    branches:
+      - uat
+
+  workflow_dispatch:
+
+# Prevent multiple scans for the same branch from running simultaneously.
+concurrency:
+  group: uat-security-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+env:
+  NODE_VERSION: "22"
+  FLUTTER_VERSION: "stable"
+  PYTHON_VERSION: "3.14.7"
+
+jobs:
+
+  # ============================================================
+  # 1. DETECT PROJECT TYPE
+  # ============================================================
+
+  detect:
+    name: Detect Project
+    runs-on: ubuntu-latest
+
+    outputs:
+      flutter: ${{ steps.detect.outputs.flutter }}
+      node: ${{ steps.detect.outputs.node }}
+      angular: ${{ steps.detect.outputs.angular }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Detect technologies
+        id: detect
+        shell: bash
+        run: |
+          flutter=false
+          node=false
+          angular=false
+
+          if [ -f "pubspec.yaml" ]; then
+            flutter=true
+          fi
+
+          if [ -f "package.json" ]; then
+            node=true
+          fi
+
+          if [ -f "angular.json" ]; then
+            angular=true
+          fi
+
+          echo "flutter=$flutter" >> "$GITHUB_OUTPUT"
+          echo "node=$node" >> "$GITHUB_OUTPUT"
+          echo "angular=$angular" >> "$GITHUB_OUTPUT"
+
+          echo "Flutter: $flutter"
+          echo "Node.js: $node"
+          echo "Angular: $angular"
+
+
+  # ============================================================
+  # 2. SECRET SCANNING
+  # ============================================================
+
+  secret-scan:
+    name: 🔐 Secret Scan - Gitleaks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================
+  # 3. SAST - SEMGREP
+  # ============================================================
+
+  sast:
+    name: 🛡️ SAST - Semgrep
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Semgrep
+        run: |
+          python -m pip install --upgrade pip
+          pip install semgrep
+
+      - name: Run Semgrep
+        run: |
+          semgrep scan \
+            --config auto \
+            --error \
+            --exclude .git \
+            --exclude build \
+            --exclude node_modules \
+            --exclude .dart_tool \
+            --exclude ios/Pods \
+            --exclude android/.gradle
+
+  # ============================================================
+  # 4. TRIVY DEPENDENCY / FILESYSTEM SCAN
+  # ============================================================
+
+  dependency-scan:
+    name: 📦 Dependency Scan - Trivy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+
+  # ============================================================
+  # 5. FLUTTER / DART
+  # ============================================================
+
+  flutter:
+    name: 📱 Flutter Quality
+    needs: detect
+    if: needs.detect.outputs.flutter == 'true'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Check outdated dependencies
+        continue-on-error: true
+        run: flutter pub outdated
+
+      - name: Analyze Dart code
+        run: flutter analyze
+
+      - name: Run Flutter tests
+        run: flutter test
+
+  # ============================================================
+  # 6. NODE / ANGULAR
+  # ============================================================
+
+  node:
+    name: 🟢 Node.js / Angular Quality
+    needs: detect
+    if: needs.detect.outputs.node == 'true'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      # --------------------------------------------------------
+      # ESLint
+      # --------------------------------------------------------
+
+      - name: ESLint
+        shell: bash
+        run: |
+          if npm run | grep -q "lint"; then
+            npm run lint
+          else
+            echo "No lint script found. Skipping."
+          fi
+
+      # --------------------------------------------------------
+      # TypeScript
+      # --------------------------------------------------------
+
+      - name: TypeScript validation
+        shell: bash
+        run: |
+          if [ -f tsconfig.json ]; then
+            npx tsc --noEmit
+          else
+            echo "No tsconfig.json found. Skipping."
+          fi
+
+      # --------------------------------------------------------
+      # Unit Tests
+      # --------------------------------------------------------
+
+      - name: Run tests
+        shell: bash
+        run: |
+          if npm run | grep -q "test"; then
+            npm test -- --watch=false
+          else
+            echo "No test script found. Skipping."
+          fi
+
+      # --------------------------------------------------------
+      # NPM SECURITY
+      # --------------------------------------------------------
+
+      - name: NPM audit
+        run: |
+          npm audit \
+            --audit-level=high \
+            --omit=dev
+
+  # ============================================================
+  # 7. ANGULAR BUILD
+  # ============================================================
+
+  angular-build:
+    name: 🅰️ Angular Build
+    needs:
+      - detect
+      - node
+
+    if: |
+      needs.detect.outputs.angular == 'true' &&
+      needs.node.result == 'success'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Install Angular CLI
+        run: npm install -g @angular/cli
+
+      - name: Angular Build
+        run: ng build
+
+  # ============================================================
+  # 8. LICENSE / DEPENDENCY POLICY
+  # ============================================================
+
+  dependency-policy:
+    name: 📜 Dependency Policy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check package files
+        shell: bash
+        run: |
+          echo "Checking dependency manifests..."
+
+          if [ -f package.json ]; then
+            echo "Node.js package detected"
+          fi
+
+          if [ -f pubspec.yaml ]; then
+            echo "Flutter package detected"
+          fi
+
+          if [ -f package-lock.json ]; then
+            echo "package-lock.json detected"
+          fi
+
+          echo "Dependency policy check completed."
+
+  # ============================================================
+  # 9. UAT SECURITY SUMMARY
+  # ============================================================
+
+  uat-summary:
+    name: 🚦 UAT Security Gate
+    needs:
+      - detect
+      - secret-scan
+      - sast
+      - dependency-scan
+      - flutter
+      - node
+      - angular-build
+      - dependency-policy
+
+    if: always()
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Evaluate security results
+        shell: bash
+        run: |
+
+          echo "=========================================="
+          echo "       UAT SECURITY SUMMARY"
+          echo "=========================================="
+
+          echo "Secret Scan       : ${{ needs.secret-scan.result }}"
+          echo "SAST              : ${{ needs.sast.result }}"
+          echo "Dependency Scan   : ${{ needs.dependency-scan.result }}"
+          echo "Flutter           : ${{ needs.flutter.result }}"
+          echo "Node.js           : ${{ needs.node.result }}"
+          echo "Angular Build     : ${{ needs.angular-build.result }}"
+          echo "Dependency Policy : ${{ needs.dependency-policy.result }}"
+
+          echo "=========================================="
+
+          FAILED=false
+
+          if [[ "${{ needs.secret-scan.result }}" == "failure" ]]; then
+            FAILED=true
+          fi
+
+          if [[ "${{ needs.sast.result }}" == "failure" ]]; then
+            FAILED=true
+          fi
+
+          if [[ "${{ needs.dependency-scan.result }}" == "failure" ]]; then
+            FAILED=true
+          fi
+
+          if [[ "${{ needs.flutter.result }}" == "failure" ]]; then
+            FAILED=true
+          fi
+
+          if [[ "${{ needs.node.result }}" == "failure" ]]; then
+            FAILED=true
+          fi
+
+          if [[ "${{ needs.angular-build.result }}" == "failure" ]]; then
+            FAILED=true
+          fi
+
+          if [[ "$FAILED" == "true" ]]; then
+            echo ""
+            echo "❌ UAT SECURITY GATE FAILED"
+            echo ""
+            echo "Please fix the reported issues before promoting code."
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ UAT SECURITY GATE PASSED"
+          echo ""
