@@ -124,8 +124,8 @@ jobs:
             --exclude node_modules \
             --exclude .dart_tool \
             --exclude ios/Pods \
-            --exclude android/.gradle
-            --exclude '**/firebase_options.dart'
+            --exclude android/.gradle\
+            --exclude '**/firebase_options.dart'\
             --exclude lib/pages/notification/firebase_options.dart
 
   # ============================================================
