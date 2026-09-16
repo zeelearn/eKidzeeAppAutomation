@@ -181,6 +181,13 @@ jobs:
       - name: Flutter version
         run: flutter --version
 
+      # Authenticate GitHub so private Git dependencies
+      # such as ZeeLearnLtd/pageddatatable can be cloned.
+      - name: Configure GitHub authentication
+        run: |
+          git config --global url."https://${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+
       - name: Get dependencies
         run: flutter pub get
 
