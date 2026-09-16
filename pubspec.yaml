@@ -154,15 +154,11 @@ dependencies:
     #path: ../UAT/octave_firebasesync
     #path: ../UAfontsT/litera_octave_congnimind
 
-  # zeelms:
-  #   git:
-  #     url: https://github.com/ZeeLearnLtd/zeelms.git
-  #     recurse-submodules: true
-  #     ref: ios_musebinding
+
 
   paged_datatable:
     git:
-      url: https://github.com/ZeeLearnLtd/pageddatatable.git
+      url: https://github.com/zeelearn/pageddatatableAutomation.git
       #recurse-submodules: true
       ref: main
 
