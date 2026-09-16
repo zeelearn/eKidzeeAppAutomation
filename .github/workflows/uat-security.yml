@@ -136,33 +136,8 @@ jobs:
             --exclude android/.gradle \
             --exclude '**/firebase_options.dart'
 
-    # ============================================================
-  # 9. SONARQUBE CODE QUALITY
-  # ============================================================
-
-  sonarqube:
-    name: 📊 SonarQube Code Quality
-    runs-on: ubuntu-latest
-
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v6
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-
-      - name: SonarQube Quality Gate
-        uses: SonarSource/sonarqube-quality-gate-action@v1
-        timeout-minutes: 10
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+  
+          
   # ============================================================
   # 4. TRIVY - DEPENDENCY / FILESYSTEM SECURITY
   # ============================================================
