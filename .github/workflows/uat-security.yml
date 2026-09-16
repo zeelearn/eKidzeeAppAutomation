@@ -1,4 +1,4 @@
-name: UAT - Code Quality & Security
+name: UAT - DevSecOps Security & Quality
 
 on:
   push:
@@ -7,19 +7,18 @@ on:
 
   workflow_dispatch:
 
-# Prevent multiple scans for the same branch from running simultaneously.
-concurrency:
-  group: uat-security-${{ github.repository }}-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions:
   contents: read
   security-events: write
+  actions: read
+
+concurrency:
+  group: uat-security-${{ github.repository }}
+  cancel-in-progress: true
 
 env:
-  NODE_VERSION: "24"
   FLUTTER_VERSION: "stable"
-  PYTHON_VERSION: "3.14.7"
+  NODE_VERSION: "22"
 
 jobs:
 
@@ -28,7 +27,7 @@ jobs:
   # ============================================================
 
   detect:
-    name: Detect Project
+    name: Detect Project Type
     runs-on: ubuntu-latest
 
     outputs:
@@ -37,77 +36,85 @@ jobs:
       angular: ${{ steps.detect.outputs.angular }}
 
     steps:
+
       - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Detect technologies
-        id: detect
-        shell: bash
-        run: |
-          flutter=false
-          node=false
-          angular=false
-
-          if [ -f "pubspec.yaml" ]; then
-            flutter=true
-          fi
-
-          if [ -f "package.json" ]; then
-            node=true
-          fi
-
-          if [ -f "angular.json" ]; then
-            angular=true
-          fi
-
-          echo "flutter=$flutter" >> "$GITHUB_OUTPUT"
-          echo "node=$node" >> "$GITHUB_OUTPUT"
-          echo "angular=$angular" >> "$GITHUB_OUTPUT"
-
-          echo "Flutter: $flutter"
-          echo "Node.js: $node"
-          echo "Angular: $angular"
-
-
-  # ============================================================
-  # 2. SECRET SCANNING
-  # ============================================================
-
-  secret-scan:
-    name: 🔐 Secret Scan - Gitleaks
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
 
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+      - name: Detect project
+        id: detect
+        shell: bash
+        run: |
+
+          echo "Detecting project type..."
+
+          if [ -f "pubspec.yaml" ]; then
+            echo "flutter=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "flutter=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -f "package.json" ]; then
+            echo "node=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "node=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -f "angular.json" ]; then
+            echo "angular=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "angular=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "Flutter: $(grep -q 'flutter=true' "$GITHUB_OUTPUT" && echo yes || echo no)"
+          echo "Node:    $(grep -q 'node=true' "$GITHUB_OUTPUT" && echo yes || echo no)"
+          echo "Angular: $(grep -q 'angular=true' "$GITHUB_OUTPUT" && echo yes || echo no)"
+
+
+  # ============================================================
+  # 2. SECRET SCANNING - GITLEAKS
+  # ============================================================
+
+  gitleaks:
+    name: Secret Scan - Gitleaks
+    needs: detect
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4 # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
 
   # ============================================================
   # 3. SAST - SEMGREP
   # ============================================================
 
-  sast:
-    name: 🛡️ SAST - Semgrep
+  semgrep:
+    name: SAST - Semgrep
+    needs: detect
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b9 # v7.0.0
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: "3.13"
 
       - name: Install Semgrep
         run: |
@@ -115,7 +122,9 @@ jobs:
           pip install semgrep
 
       - name: Run Semgrep
+        shell: bash
         run: |
+
           semgrep scan \
             --config auto \
             --error \
@@ -124,117 +133,100 @@ jobs:
             --exclude node_modules \
             --exclude .dart_tool \
             --exclude ios/Pods \
-            --exclude android/.gradle\
-            --exclude '**/firebase_options.dart'\
-            --exclude lib/pages/notification/firebase_options.dart\
-            --exclude .github \
-            --exclude web/sqflite_sw.js\
-            --exclude ios/Runner/Info.plist\
-            --exclude ios/Runner/Infomlzs.plist\
-            --exclude android/app/.cxx
+            --exclude android/.gradle \
+            --exclude '**/firebase_options.dart'
+
 
   # ============================================================
-  # 4. TRIVY DEPENDENCY / FILESYSTEM SCAN
+  # 4. TRIVY - DEPENDENCY / FILESYSTEM SECURITY
   # ============================================================
 
-  dependency-scan:
-    name: 📦 Dependency Scan - Trivy
+  trivy:
+    name: Vulnerability Scan - Trivy
+    needs: detect
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
-      - name: Run Trivy
-        uses: aquasecurity/trivy-action@master
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Trivy Filesystem Scan
+        uses: aquasecurity/trivy-action@ed142fd # v0.36.0
         with:
           scan-type: fs
           scan-ref: .
-          scanners: vuln,secret
-          severity: CRITICAL,HIGH
+          severity: HIGH,CRITICAL
           ignore-unfixed: true
-          exit-code: "1"
+          exit-code: 1
+          format: table
+
 
   # ============================================================
-  # 5. FLUTTER / DART
+  # 5. FLUTTER / DART QUALITY
   # ============================================================
 
   flutter:
-    name: 📱 Flutter Quality
+    name: Flutter Quality
     needs: detect
     if: needs.detect.outputs.flutter == 'true'
-
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@fd55f4c # v2.21.0
         with:
-          channel: ${{ env.FLUTTER_VERSION }}
+          channel: stable
           cache: true
 
-      - name: Flutter version
+      - name: Flutter Version
         run: flutter --version
 
-      # Authenticate GitHub so private Git dependencies
-      # such as ZeeLearnLtd/pageddatatable can be cloned.
-      - name: Configure GitHub authentication
-        run: |
-          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
-
-      - name: Get dependencies
+      - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Check outdated dependencies
-        continue-on-error: true
-        run: flutter pub outdated
+      - name: Flutter Analyze
+        run: flutter analyze --fatal-infos
 
-      - name: Analyze Dart code
-        run: flutter analyze
-
-      - name: Run Flutter tests
+      - name: Flutter Tests
         run: flutter test
 
+
   # ============================================================
-  # 6. NODE / ANGULAR
+  # 6. NODE / ANGULAR QUALITY
   # ============================================================
 
   node:
-    name: 🟢 Node.js / Angular Quality
+    name: Node / Angular Quality
     needs: detect
     if: needs.detect.outputs.node == 'true'
-
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@8207627 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-
-      # --------------------------------------------------------
-      # ESLint
-      # --------------------------------------------------------
+      - name: Install Dependencies
+        run: npm ci
 
       - name: ESLint
-        shell: bash
         run: |
           if npm run | grep -q "lint"; then
             npm run lint
@@ -242,128 +234,102 @@ jobs:
             echo "No lint script found. Skipping."
           fi
 
-      # --------------------------------------------------------
-      # TypeScript
-      # --------------------------------------------------------
-
-      - name: TypeScript validation
-        shell: bash
+      - name: TypeScript Check
         run: |
-          if [ -f tsconfig.json ]; then
+          if [ -f "tsconfig.json" ]; then
             npx tsc --noEmit
           else
             echo "No tsconfig.json found. Skipping."
           fi
 
-      # --------------------------------------------------------
-      # Unit Tests
-      # --------------------------------------------------------
-
-      - name: Run tests
-        shell: bash
+      - name: Unit Tests
         run: |
           if npm run | grep -q "test"; then
-            npm test -- --watch=false
+            npm test -- --runInBand
           else
             echo "No test script found. Skipping."
           fi
 
-      # --------------------------------------------------------
-      # NPM SECURITY
-      # --------------------------------------------------------
-
-      - name: NPM audit
+      - name: NPM Audit
         run: |
-          npm audit \
-            --audit-level=high \
-            --omit=dev
+          npm audit --audit-level=high
+
 
   # ============================================================
   # 7. ANGULAR BUILD
   # ============================================================
 
-  angular-build:
-    name: 🅰️ Angular Build
-    needs:
-      - detect
-      - node
-
-    if: |
-      needs.detect.outputs.angular == 'true' &&
-      needs.node.result == 'success'
-
+  angular:
+    name: Angular Build
+    needs: detect
+    if: needs.detect.outputs.angular == 'true'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@8207627 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-
-      - name: Install Angular CLI
-        run: npm install -g @angular/cli
+      - name: Install Dependencies
+        run: npm ci
 
       - name: Angular Build
-        run: ng build
+        run: npm run build
+
 
   # ============================================================
-  # 8. LICENSE / DEPENDENCY POLICY
+  # 8. SONARQUBE CODE QUALITY
   # ============================================================
 
-  dependency-policy:
-    name: 📜 Dependency Policy
+  sonarqube:
+    name: SonarQube Code Quality
+    needs: detect
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
 
-      - name: Check package files
-        shell: bash
-        run: |
-          echo "Checking dependency manifests..."
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@2291811 # v8.2.1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
-          if [ -f package.json ]; then
-            echo "Node.js package detected"
-          fi
+      - name: SonarQube Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@cf038b0 # v1.2.0
+        timeout-minutes: 10
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
-          if [ -f pubspec.yaml ]; then
-            echo "Flutter package detected"
-          fi
-
-          if [ -f package-lock.json ]; then
-            echo "package-lock.json detected"
-          fi
-
-          echo "Dependency policy check completed."
 
   # ============================================================
-  # 9. UAT SECURITY SUMMARY
+  # 9. FINAL SECURITY / QUALITY GATE
   # ============================================================
 
-  uat-summary:
-    name: 🚦 UAT Security Gate
+  security-gate:
+    name: Final UAT Security Gate
     needs:
       - detect
-      - secret-scan
-      - sast
-      - dependency-scan
+      - gitleaks
+      - semgrep
+      - trivy
       - flutter
       - node
-      - angular-build
-      - dependency-policy
+      - angular
+      - sonarqube
 
     if: always()
 
@@ -371,58 +337,74 @@ jobs:
 
     steps:
 
-      - name: Evaluate security results
+      - name: Evaluate Security Gate
         shell: bash
         run: |
 
           echo "=========================================="
-          echo "       UAT SECURITY SUMMARY"
+          echo "        UAT DEVSECOPS SECURITY GATE"
           echo "=========================================="
 
-          echo "Secret Scan       : ${{ needs.secret-scan.result }}"
-          echo "SAST              : ${{ needs.sast.result }}"
-          echo "Dependency Scan   : ${{ needs.dependency-scan.result }}"
-          echo "Flutter           : ${{ needs.flutter.result }}"
-          echo "Node.js           : ${{ needs.node.result }}"
-          echo "Angular Build     : ${{ needs.angular-build.result }}"
-          echo "Dependency Policy : ${{ needs.dependency-policy.result }}"
-
-          echo "=========================================="
+          echo ""
+          echo "Gitleaks : ${{ needs.gitleaks.result }}"
+          echo "Semgrep  : ${{ needs.semgrep.result }}"
+          echo "Trivy    : ${{ needs.trivy.result }}"
+          echo "Flutter  : ${{ needs.flutter.result }}"
+          echo "Node     : ${{ needs.node.result }}"
+          echo "Angular  : ${{ needs.angular.result }}"
+          echo "SonarQube: ${{ needs.sonarqube.result }}"
+          echo ""
 
           FAILED=false
 
-          if [[ "${{ needs.secret-scan.result }}" == "failure" ]]; then
+          if [[ "${{ needs.gitleaks.result }}" == "failure" ]]; then
+            echo "❌ Gitleaks failed"
             FAILED=true
           fi
 
-          if [[ "${{ needs.sast.result }}" == "failure" ]]; then
+          if [[ "${{ needs.semgrep.result }}" == "failure" ]]; then
+            echo "❌ Semgrep failed"
             FAILED=true
           fi
 
-          if [[ "${{ needs.dependency-scan.result }}" == "failure" ]]; then
+          if [[ "${{ needs.trivy.result }}" == "failure" ]]; then
+            echo "❌ Trivy failed"
             FAILED=true
           fi
 
           if [[ "${{ needs.flutter.result }}" == "failure" ]]; then
+            echo "❌ Flutter checks failed"
             FAILED=true
           fi
 
           if [[ "${{ needs.node.result }}" == "failure" ]]; then
+            echo "❌ Node checks failed"
             FAILED=true
           fi
 
-          if [[ "${{ needs.angular-build.result }}" == "failure" ]]; then
+          if [[ "${{ needs.angular.result }}" == "failure" ]]; then
+            echo "❌ Angular build failed"
             FAILED=true
           fi
+
+          if [[ "${{ needs.sonarqube.result }}" == "failure" ]]; then
+            echo "❌ SonarQube Quality Gate failed"
+            FAILED=true
+          fi
+
+          echo ""
 
           if [[ "$FAILED" == "true" ]]; then
-            echo ""
+            echo "=========================================="
             echo "❌ UAT SECURITY GATE FAILED"
-            echo ""
-            echo "Please fix the reported issues before promoting code."
+            echo "Code cannot proceed to MAIN."
+            echo "=========================================="
             exit 1
           fi
 
-          echo ""
+          echo "=========================================="
           echo "✅ UAT SECURITY GATE PASSED"
-          echo ""
+          echo "=========================================="
+
+
+ 
