@@ -9,3 +9,10 @@ build/
 # Other generated files
 **/*.g.dart
 **/*.freezed.dart
+
+**/firebase_options.dart
+.github/
+web/sqflite_sw.js
+ios/Runner/Info.plist
+ios/Runner/Infomlzs.plist
+android/app/.cxx

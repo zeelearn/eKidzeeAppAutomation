@@ -15,13 +15,10 @@ class CardColor {
         return isCompleted
             ? [AppColors.disabled, Colors.black45]
             : [AppColors.primaryAccent, AppColors.primaryLight];
-        break;
       case TaskPageStatus.completed:
         return [AppColors.disabled, AppColors.disabled];
-        break;
       default:
         return [AppColors.primarySoft, AppColors.primary];
-        break;
     }
   }
 
