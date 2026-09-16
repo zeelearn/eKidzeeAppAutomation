@@ -16,24 +16,24 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
-		C51A036630107E76008D86A8 /* UnityFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C51A036530107E76008D86A8 /* UnityFramework.framework */; };
-		C51A036730107E76008D86A8 /* UnityFramework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C51A036530107E76008D86A8 /* UnityFramework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		C51A036A30107E7D008D86A8 /* UnityDriver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C51A036930107E7D008D86A8 /* UnityDriver.framework */; };
-		C51A036B30107E7D008D86A8 /* UnityDriver.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C51A036930107E7D008D86A8 /* UnityDriver.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		C51A036D30107E8C008D86A8 /* VuforiaEngine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C51A036C30107E8C008D86A8 /* VuforiaEngine.framework */; };
-		C51A036E30107E8C008D86A8 /* VuforiaEngine.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C51A036C30107E8C008D86A8 /* VuforiaEngine.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C5E5B930302C72B8007FC6EF /* UnityFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C5E5B92F302C72B8007FC6EF /* UnityFramework.framework */; };
+		C5E5B931302C72B8007FC6EF /* UnityFramework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C5E5B92F302C72B8007FC6EF /* UnityFramework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C5E5B934302C72BD007FC6EF /* UnityDriver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C5E5B933302C72BD007FC6EF /* UnityDriver.framework */; };
+		C5E5B935302C72BD007FC6EF /* UnityDriver.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C5E5B933302C72BD007FC6EF /* UnityDriver.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C5E5B937302C72BF007FC6EF /* VuforiaEngine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C5E5B936302C72BF007FC6EF /* VuforiaEngine.framework */; };
+		C5E5B938302C72BF007FC6EF /* VuforiaEngine.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C5E5B936302C72BF007FC6EF /* VuforiaEngine.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		C51A036830107E76008D86A8 /* Embed Frameworks */ = {
+		C5E5B932302C72B8007FC6EF /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				C51A036E30107E8C008D86A8 /* VuforiaEngine.framework in Embed Frameworks */,
-				C51A036B30107E7D008D86A8 /* UnityDriver.framework in Embed Frameworks */,
-				C51A036730107E76008D86A8 /* UnityFramework.framework in Embed Frameworks */,
+				C5E5B938302C72BF007FC6EF /* VuforiaEngine.framework in Embed Frameworks */,
+				C5E5B935302C72BD007FC6EF /* UnityDriver.framework in Embed Frameworks */,
+				C5E5B931302C72B8007FC6EF /* UnityFramework.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -65,13 +65,13 @@
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9CCC782D689841881EE52E99 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9F96AB07814C1BC18F1CF854 /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
-		C51A036530107E76008D86A8 /* UnityFramework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = UnityFramework.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		C51A036930107E7D008D86A8 /* UnityDriver.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UnityDriver.framework; path = "../../../../../../H-LPW0RH43JX/Development/Documents/kidzeeOctave/Generic iOS  6.0.0/Frameworks/com.ptc.vuforia.engine/Vuforia/Plugins/iOS/UnityDriver.framework"; sourceTree = "<group>"; };
-		C51A036C30107E8C008D86A8 /* VuforiaEngine.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = VuforiaEngine.framework; path = "../../../../../../H-LPW0RH43JX/Development/Documents/kidzeeOctave/Generic iOS  6.0.0/Frameworks/com.ptc.vuforia.engine/Vuforia/Plugins/iOS/VuforiaEngine.framework"; sourceTree = "<group>"; };
 		C5BEE7082C005B910089C56E /* Runnermlzs Debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Runnermlzs Debug.entitlements"; sourceTree = "<group>"; };
 		C5C610012BFC967100A4A07F /* RunnermlzsRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnermlzsRelease.entitlements; sourceTree = "<group>"; };
 		C5C610022BFC968100A4A07F /* RunnerRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerRelease.entitlements; sourceTree = "<group>"; };
 		C5D6FF792BFDCDF40050098E /* RunnerDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerDebug.entitlements; sourceTree = "<group>"; };
+		C5E5B92F302C72B8007FC6EF /* UnityFramework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = UnityFramework.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C5E5B933302C72BD007FC6EF /* UnityDriver.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UnityDriver.framework; path = "../../../../../../H-LPW0RH43JX/Development/Flutter/Kidzee/Generic iOS 7.0.0/Frameworks/com.ptc.vuforia.engine/Vuforia/Plugins/iOS/UnityDriver.framework"; sourceTree = "<group>"; };
+		C5E5B936302C72BF007FC6EF /* VuforiaEngine.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = VuforiaEngine.framework; path = "../../../../../../H-LPW0RH43JX/Development/Flutter/Kidzee/Generic iOS 7.0.0/Frameworks/com.ptc.vuforia.engine/Vuforia/Plugins/iOS/VuforiaEngine.framework"; sourceTree = "<group>"; };
 		E47DE4F3CBE575B5E681BA77 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -80,11 +80,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C51A036D30107E8C008D86A8 /* VuforiaEngine.framework in Frameworks */,
+				C5E5B937302C72BF007FC6EF /* VuforiaEngine.framework in Frameworks */,
 				40FEE2E42A0D156D005134E4 /* libsqlite3.tbd in Frameworks */,
 				9572BC58231C1FD2C23209F8 /* Pods_Runner.framework in Frameworks */,
-				C51A036A30107E7D008D86A8 /* UnityDriver.framework in Frameworks */,
-				C51A036630107E76008D86A8 /* UnityFramework.framework in Frameworks */,
+				C5E5B934302C72BD007FC6EF /* UnityDriver.framework in Frameworks */,
+				C5E5B930302C72B8007FC6EF /* UnityFramework.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -94,11 +94,11 @@
 		372571EB8666CFCC7F7CCC4D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				C51A036530107E76008D86A8 /* UnityFramework.framework */,
+				C5E5B936302C72BF007FC6EF /* VuforiaEngine.framework */,
+				C5E5B933302C72BD007FC6EF /* UnityDriver.framework */,
+				C5E5B92F302C72B8007FC6EF /* UnityFramework.framework */,
 				74D49EF02E3794F100BFB160 /* flutter_downloader.framework */,
-				C51A036930107E7D008D86A8 /* UnityDriver.framework */,
 				40FEE2E32A0D156D005134E4 /* libsqlite3.tbd */,
-				C51A036C30107E8C008D86A8 /* VuforiaEngine.framework */,
 				9CCC782D689841881EE52E99 /* Pods_Runner.framework */,
 			);
 			name = Frameworks;
@@ -201,17 +201,17 @@
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
 				EFC4A782E8B9E3EC56165D58 /* [CP] Check Pods Manifest.lock */,
+				C5E5B932302C72B8007FC6EF /* Embed Frameworks */,
 				85309213FE4E6B7CC7189CDE /* [CP] Embed Pods Frameworks */,
 				9740EEB61CF901F6004384FC /* Run Script */,
-				C51A036830107E76008D86A8 /* Embed Frameworks */,
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				BAF94481D8C22DA61BF23D7E /* [firebase_crashlytics] Crashlytics Upload Symbols */,
 				4098E4C229DEF1D600D6859C /* Firebase script */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				9BF989F23B81509FDB18E6BC /* [CP] Copy Pods Resources */,
-				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				BE48155CF59B473E65DBE091 /* FlutterFire: "flutterfire upload-crashlytics-symbols" */,
+				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 			);
 			buildRules = (
 			);
@@ -522,7 +522,7 @@
 				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
-				CURRENT_PROJECT_VERSION = 83;
+				CURRENT_PROJECT_VERSION = 88;
 				ENABLE_BITCODE = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -535,7 +535,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.43;
+				MARKETING_VERSION = 1.1.46;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zeelearn.ekidzee;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -619,7 +619,7 @@
 				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "Runner/Runnermlzs Debug.entitlements";
-				CURRENT_PROJECT_VERSION = 83;
+				CURRENT_PROJECT_VERSION = 88;
 				ENABLE_BITCODE = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -714,7 +714,7 @@
 				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/RunnermlzsRelease.entitlements;
-				CURRENT_PROJECT_VERSION = 83;
+				CURRENT_PROJECT_VERSION = 88;
 				ENABLE_BITCODE = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -869,7 +869,7 @@
 				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/RunnerDebug.entitlements;
-				CURRENT_PROJECT_VERSION = 83;
+				CURRENT_PROJECT_VERSION = 88;
 				ENABLE_BITCODE = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -882,7 +882,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.43;
+				MARKETING_VERSION = 1.1.46;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zeelearn.ekidzee;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -906,7 +906,7 @@
 				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/RunnerRelease.entitlements;
-				CURRENT_PROJECT_VERSION = 83;
+				CURRENT_PROJECT_VERSION = 88;
 				ENABLE_BITCODE = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -920,7 +920,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.43;
+				MARKETING_VERSION = 1.1.46;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zeelearn.ekidzee;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

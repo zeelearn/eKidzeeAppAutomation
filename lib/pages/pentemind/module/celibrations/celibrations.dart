@@ -5,7 +5,6 @@ import 'package:ekidzee/utils/theme/colors/light_colors.dart';
 import 'package:ekidzee/widget/MyWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../firebase/anylatics.dart';
 import '../../../../../helper/utils.dart';
@@ -121,15 +120,6 @@ class _CelibrationScreenState extends State<CelibrationScreen>
     }
   }
 
-  Future<void> _launchUrl(String url) async {
-    if (!await launchUrl(
-      Uri.parse(url),
-      mode: LaunchMode.externalApplication,
-    )) {
-      throw Exception('Could not launch $url');
-    }
-  }
-
   getActivityWidget(CelibrationModel model) {
     return Padding(
       padding: EdgeInsets.all(15),
@@ -228,7 +218,7 @@ class _CelibrationScreenState extends State<CelibrationScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     if (model.contenturl.contains('m3u8')) {
                       Navigator.push(
                         context,
@@ -246,18 +236,17 @@ class _CelibrationScreenState extends State<CelibrationScreen>
                             title: model.title,
                             filename: '${model.title}.pdf',
                             module: 'celi',
+                            isDownload: false,
                           ),
                         ),
                       );
                     } else {
                       debugPrint(model.contenturl);
-                      //MyWebsiteView(title: model.title, url: model.contenturl);
-                      //_launchUrl(model.contenturl);
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext context) => goToMYWebsite(
-                                title: model.title,
-                                url: model.contenturl,
-                              )));
+                      await openCelebrationWebsite(
+                        context,
+                        title: model.title,
+                        url: model.contenturl,
+                      );
                     }
                   },
                   child: Container(
@@ -282,7 +271,7 @@ class _CelibrationScreenState extends State<CelibrationScreen>
                   : Align(
                       alignment: Alignment.center,
                       child: GestureDetector(
-                          onTap: () {
+                          onTap: () async {
                             if (model.contenturl.contains('m3u8')) {
                               Navigator.push(
                                 context,
@@ -300,16 +289,17 @@ class _CelibrationScreenState extends State<CelibrationScreen>
                                     title: model.title,
                                     filename: '${model.title}.pdf',
                                     module: 'celi',
+                                    isDownload: false,
                                   ),
                                 ),
                               );
                             } else {
                               debugPrint(model.viewurl);
-                              //MyWebsiteView(title: model.title, url: model.contenturl);
-                              /*Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext context) =>
-                              MyWebsiteView(title: model.title,url: model.viewurl,)));*/
-                              _launchUrl(model.viewurl);
+                              await openCelebrationWebsite(
+                                context,
+                                title: model.title,
+                                url: model.viewurl,
+                              );
                             }
                           },
                           child: Container(

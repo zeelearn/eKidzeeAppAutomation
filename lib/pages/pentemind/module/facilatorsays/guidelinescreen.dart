@@ -267,6 +267,7 @@ class _GuideLineScreenState extends State<GuideLineScreen>
           title: model.ContentDescription,
           filename: model.ContentDescription,
           module: '${classId}_guldeline',
+          isDownload: false,
         ),
       ),
     );

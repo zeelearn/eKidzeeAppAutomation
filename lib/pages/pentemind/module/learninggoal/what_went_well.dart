@@ -4,11 +4,8 @@ import 'package:ekidzee/api/request/pentemind/learninggoal/get_whatwentwell.dart
 import 'package:ekidzee/api/request/pentemind/learninggoal/www/SaveWhatWentWellRequest.dart';
 import 'package:ekidzee/helper/LocalConstant.dart';
 import 'package:ekidzee/iface/onClick.dart';
-import 'package:ekidzee/widget/MyWidget.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../api/APIService.dart';
@@ -18,6 +15,7 @@ import '../../../../constants.dart';
 import '../../../../firebase/anylatics.dart';
 import '../../../../helper/utils.dart';
 import '../../../../utils/theme/colors/light_colors.dart';
+import 'learning_goal_ui.dart';
 
 class WhatWentWellScreen extends StatefulWidget {
   String type;
@@ -40,8 +38,6 @@ class _WhatWentWellScreenState extends State<WhatWentWellScreen>
   String teacherId = '';
   String userType = '';
   String token = '';
-  String term = '';
-  String studentId = '';
   String className = '';
   int programId = 0;
   final TextEditingController _wwwController = TextEditingController();
@@ -49,13 +45,13 @@ class _WhatWentWellScreenState extends State<WhatWentWellScreen>
   WhatWentWellResponseModel? _selectedResponseModel;
   SaveWhatWentWellModel? _wwwRequestModel;
 
+  String get _screenTitle =>
+      widget.type == 'EVNBTR' ? 'Even Better If' : 'What Went Well';
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-
     WidgetsBinding.instance.addObserver(this);
-    //getUserInfo();
     loadData();
   }
 
@@ -65,13 +61,13 @@ class _WhatWentWellScreenState extends State<WhatWentWellScreen>
 
   @override
   void dispose() {
+    _wwwController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-//     debugPrint('_AnnouncementListState didChangeAppLifecycleState ${state} ');
     if (state == AppLifecycleState.resumed) {
       getWhatWentWell();
     }
@@ -105,7 +101,6 @@ class _WhatWentWellScreenState extends State<WhatWentWellScreen>
       );
       wwwModel.addAll(response.data);
       setState(() {});
-      setState(() {});
       isLoad = true;
     } catch (e) {
       isLoad = false;
@@ -130,22 +125,17 @@ class _WhatWentWellScreenState extends State<WhatWentWellScreen>
 
     APIService apiService = APIService();
     apiService.getWhatWentWell(request, token).then((value) {
-      debugPrint(value.toString());
       isLoading = false;
       if (value != null) {
-        if (value == null) {
-          Utility.showMessage(context, 'data not found');
-        } else if (value is WhatWentWellResponse) {
+        if (value is WhatWentWellResponse) {
           WhatWentWellResponse response = value;
           String json = jsonEncode(response);
           savechildAdvancementSummery(json);
           wwwModel.addAll(response.data);
-          setState(() {});
         } else {
           Utility.showMessage(context, 'data not found');
         }
       }
-      //Navigator.of(context).pop();
       setState(() {});
     });
   }
@@ -154,218 +144,142 @@ class _WhatWentWellScreenState extends State<WhatWentWellScreen>
   Widget build(BuildContext context) {
     FirebaseAnalyticsUtils().sendAnalyticsEvent('WhatWentWell');
     return Scaffold(
-        appBar: AppBar(
-          centerTitle: false,
-          title: Text(
-            widget.type == 'EVNBTR' ? 'Even Better If' : 'What Went Well',
-            style: GoogleFonts.roboto(
-              fontSize: 14.0,
-              color: Colors.white,
-              fontWeight: FontWeight.normal,
-              height: 1,
-            ),
-          ), // You can add title here
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          backgroundColor: kPrimaryLightColor, //You can make this transparent
-          elevation: 5, //No shadow
-          shadowColor: LightColors.kLightGray1,
+      backgroundColor: LearningGoalUi.pageBackground,
+      appBar: LearningGoalUi.appBar(
+        title: _screenTitle,
+        subtitle: className.isNotEmpty ? className : null,
+      ),
+      body: SafeArea(
+        child: RefreshIndicator(
+          key: _refreshIndicatorKey,
+          color: Colors.white,
+          backgroundColor: kPrimaryLightColor,
+          strokeWidth: 3.0,
+          onRefresh: () async {
+            getWhatWentWell();
+            return Future<void>.delayed(const Duration(seconds: 1));
+          },
+          child: getWWWList(),
         ),
-        extendBodyBehindAppBar: true,
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: RefreshIndicator(
-            key: _refreshIndicatorKey,
-            color: Colors.white,
-            backgroundColor: kPrimaryLightColor,
-            strokeWidth: 4.0,
-            onRefresh: () async {
-              // Replace this delay with the code to be executed during refresh
-              // and return a Future when code finishs execution.
-              getWhatWentWell();
-              return Future<void>.delayed(const Duration(seconds: 3));
-            },
-            // Pull from top to show refresh indicator.
-            child: getWWWList(),
-          ),
-        ));
+      ),
+    );
   }
 
   Widget getWWWList() {
     if (isLoading) {
-      return Center(
-        child: Lottie.asset('assets/json/kidzee_loader.json'),
-      );
-    } else if (wwwModel.isEmpty) {
-      return Utility.emptyData(context,
-          "What Went Well List are  not available at this moment please check later");
-    } else {
-      return ListView.builder(
-        itemCount: wwwModel.length,
-        shrinkWrap: true,
-        itemBuilder: (context, index) {
-          return generateWWWListRow(wwwModel[index]);
-        },
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.35,
+            child: LearningGoalUi.loading(),
+          ),
+        ],
       );
     }
+
+    if (wwwModel.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+          Utility.emptyData(
+            context,
+            '$_screenTitle list is not available at this moment. Please check later.',
+          ),
+        ],
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = LearningGoalUi.contentMaxWidth(constraints.maxWidth);
+        return LearningGoalUi.centeredContent(
+          maxWidth: maxWidth,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: LearningGoalUi.pagePadding(constraints.maxWidth),
+            itemCount: wwwModel.length,
+            itemBuilder: (context, index) {
+              return generateWWWListRow(wwwModel[index], constraints.maxWidth);
+            },
+          ),
+        );
+      },
+    );
   }
 
-  Container generateWWWListRow(WhatWentWellResponseModel model) {
-    return Container(
-        color: LightColors.kLightGray,
-        child: Card(
-            color: LightColors.kLightGray1,
-            margin: EdgeInsets.all(8),
-            child: Column(
-              children: [
-                Container(
-                  color: LightColors.kLightGray1,
-                  child: ListTile(
-                      leading: SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: CircleAvatar(
-                          radius: 56,
-                          backgroundColor: LightColors.kLightGray,
-                          child: Padding(
-                            padding: const EdgeInsets.all(2), // Border radius
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(10.0),
-                              child: SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: CircleAvatar(
-                                  radius: 56,
-                                  backgroundColor: LightColors.kLightGray,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(
-                                        2), // Border radius
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(10.0),
-                                      child: model.iSphoto
-                                          ? GestureDetector(
-                                              onTap: () {
-                                                Utility.viewimage(context,
-                                                    model.studentprofileURL);
-                                              },
-                                              child: FadeInImage(
-                                                width: 30,
-                                                height: 30,
-                                                placeholder: AssetImage(
-                                                    'assets/icons/ic_student.png'),
-                                                image: NetworkImage(
-                                                    model.studentprofileURL),
-                                                imageErrorBuilder: (context,
-                                                    error, stackTrace) {
-                                                  debugPrint(error.toString());
-                                                  return Image.asset(
-                                                      'assets/icons/ic_student.png',
-                                                      fit: BoxFit.fitWidth);
-                                                },
-                                                fit: BoxFit.cover,
-                                              ),
-                                            )
-                                          : Image.asset(
-                                              'assets/icons/ic_student.png',
-                                              fit: BoxFit.fitWidth),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      title: MyWidget().richText(
-                          model.StudentName, LightColors.textHeaderStyle)),
-                ),
-                GridView.builder(
-                  physics: NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: kIsWeb ? 3 : 2,
-                    mainAxisSpacing: 0,
-                    crossAxisSpacing: 1,
-                    // width / height: fixed for *all* items
-                    childAspectRatio: kIsWeb ? 4 : 2,
+  Widget generateWWWListRow(WhatWentWellResponseModel model, double width) {
+    return LearningGoalUi.studentCardShell(
+      header: LearningGoalUi.studentHeader(
+        name: model.StudentName,
+        subtitle: '${model.whatwentwellModel.length} entries',
+        avatar: CircleAvatar(
+          radius: 22,
+          backgroundColor: LightColors.kLightGray,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: model.iSphoto
+                ? GestureDetector(
+                    onTap: () =>
+                        Utility.viewimage(context, model.studentprofileURL),
+                    child: Utility.getImageWidget(
+                      model.studentprofileURL,
+                      'assets/icons/ic_student.png',
+                    ),
+                  )
+                : Image.asset(
+                    'assets/icons/ic_student.png',
+                    fit: BoxFit.cover,
                   ),
-                  itemCount: model.whatwentwellModel.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    return getTermCard(model, model.whatwentwellModel[index]);
-                  },
-                ),
-              ],
-            )));
-  }
-
-  Card getTermCard(
-      WhatWentWellResponseModel model, WhatWentWellModel wwwModel) {
-    return Card(
-      elevation: 8,
-      shadowColor: LightColors.kAbsent,
-      child: ListTile(
-        /*title: MyWidget()
-            .richText(wwwModel.RefKey!, GoogleFonts.robotoSlab(
-          fontSize: 12.0,
-          color: Colors.indigo,
-          fontWeight: FontWeight.normal,
-          height: 1,
-        )),*/
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            MyWidget().richText(
-                wwwModel.RefKey,
-                GoogleFonts.robotoSlab(
-                  fontSize: 12.0,
-                  color: Colors.indigo,
-                  fontWeight: FontWeight.normal,
-                  height: 1,
-                )),
-            SizedBox(
-              height: 5,
-            ),
-            MyWidget().richText(
-                wwwModel.Term,
-                GoogleFonts.roboto(
-                  fontSize: 10.0,
-                  color: Colors.black54,
-                  fontWeight: FontWeight.normal,
-                  height: 1,
-                )),
-            SizedBox(
-              height: 5,
-            ),
-            MyWidget().richText(
-                wwwModel.RefValue.isNotEmpty
-                    ? wwwModel.RefValue.length > 30
-                        ? wwwModel.RefValue.substring(0, 30)
-                        : wwwModel.RefValue
-                    : '',
-                GoogleFonts.roboto(
-                  fontSize: 12.0,
-                  color: Colors.black54,
-                  fontWeight: FontWeight.normal,
-                  height: 1,
-                )),
-          ],
-        ),
-        trailing: GestureDetector(
-          onTap: () {
-            _wwwController.text =
-                wwwModel.RefValue.isNotEmpty ? wwwModel.RefValue : '';
-            setSelection(model, wwwModel);
-            showMore(
-                '${model.StudentName} ${wwwModel.RefKey}', wwwModel.RefValue);
-          },
-          child: Icon(
-            Icons.edit,
-            size: 20,
           ),
         ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
+        child: GridView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: LearningGoalUi.gridCrossAxisCount(width),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: LearningGoalUi.gridChildAspectRatio(width),
+          ),
+          itemCount: model.whatwentwellModel.length,
+          itemBuilder: (BuildContext context, int index) {
+            return getTermCard(model, model.whatwentwellModel[index]);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget getTermCard(
+      WhatWentWellResponseModel model, WhatWentWellModel wwwModel) {
+    final preview = wwwModel.RefValue.isNotEmpty
+        ? (wwwModel.RefValue.length > 40
+            ? '${wwwModel.RefValue.substring(0, 40)}…'
+            : wwwModel.RefValue)
+        : 'Tap to add feedback';
+
+    return LearningGoalUi.gridTile(
+      title: wwwModel.RefKey ?? '',
+      subtitle: wwwModel.Term,
+      preview: preview,
+      onTap: () {
+        _wwwController.text =
+            wwwModel.RefValue.isNotEmpty ? wwwModel.RefValue : '';
+        setSelection(model, wwwModel);
+        showMore('${model.StudentName} · ${wwwModel.RefKey}', wwwModel.RefValue);
+      },
+      trailing: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: kPrimaryLightColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(Icons.edit_outlined, size: 18, color: kPrimaryLightColor),
       ),
     );
   }
@@ -383,74 +297,113 @@ class _WhatWentWellScreenState extends State<WhatWentWellScreen>
 
   void showMore(String title, String value) {
     showModalBottomSheet(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(25.0))),
-        backgroundColor: Colors.black,
-        context: context,
-        isScrollControlled: true,
-        builder: (context) => Container(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: Container(
+            decoration: const BoxDecoration(
               color: Colors.white,
-              child: Padding(
-                padding: EdgeInsets.only(
-                    top: 20,
-                    right: 20,
-                    left: 20,
-                    bottom: MediaQuery.of(context).viewInsets.bottom),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(title, style: LightColors.textHeaderStyle),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: Icon(Icons.close, color: Colors.black54),
-                        )
-                      ],
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    SizedBox(
-                      height: 8.0,
-                    ),
-                    MyWidget().normalTextAreaField(
-                        context,
-                        value.isNotEmpty ? value : 'Enter text here',
-                        _wwwController),
-                    SizedBox(height: 10),
-                    Center(
-                      child: SizedBox(
-                        width: 200, // <-- Your width
-                        height: 50, // <-- Your height
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (_wwwController.text.trim() == '') {
-                              Utility.showAlertDialog(context,
-                                  'Please Enter feedback and continue');
-                            } else {
-                              Navigator.of(context).pop();
-                              saveWhatWentWell();
-                            }
-                          },
-                          // style: ButtonStyle(elevation: MaterialStateProperty(12.0 )),
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: kPrimaryLightColor,
-                              elevation: 12.0,
-                              textStyle: const TextStyle(color: Colors.white)),
-                          child: Text(
-                            'Submit',
-                            style: LightColors.textHeaderStyle13Selected,
-                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: GoogleFonts.roboto(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
                         ),
                       ),
                     ),
-                    SizedBox(height: 10),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
                   ],
                 ),
-              ),
-            ));
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _wwwController,
+                  maxLines: 5,
+                  minLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Enter feedback here…',
+                    filled: true,
+                    fillColor: const Color(0xFFF8F9FC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: kPrimaryLightColor, width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_wwwController.text.trim().isEmpty) {
+                        Utility.showAlertDialog(
+                            context, 'Please enter feedback and continue');
+                      } else {
+                        Navigator.of(ctx).pop();
+                        saveWhatWentWell();
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kPrimaryLightColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Submit',
+                      style: GoogleFonts.roboto(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void saveWhatWentWell() {
@@ -467,12 +420,9 @@ class _WhatWentWellScreenState extends State<WhatWentWellScreen>
 
     APIService apiService = APIService();
     apiService.saveWhatWentWell(request, token).then((value) {
-      debugPrint(value.toString());
       isLoading = false;
       if (value != null) {
-        if (value == null) {
-          Utility.showMessage(context, 'data not found');
-        } else if (value is GenericResponse) {
+        if (value is GenericResponse) {
           GenericResponse response = value;
           if (response.success == 200) {
             Utility.showMessage(
@@ -492,7 +442,6 @@ class _WhatWentWellScreenState extends State<WhatWentWellScreen>
 
   @override
   void onClick(int action, value) {
-//     debugPrint('onclick ${action} ${value}');
     if (action == Utility.ACTION_IMAGE_UPLOAD_RESPONSE_ERROR) {
       Navigator.of(context, rootNavigator: true).pop('dialog');
       Utility.showMessage(context, value.toString());

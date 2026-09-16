@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:ekidzee/constants.dart';
 import 'package:ekidzee/helper/download/website_view_download.dart';
@@ -46,16 +47,40 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
 
   double _progress = 0;
   bool _isLoading = false;
-  bool _settingsReady = !kIsWeb && defaultTargetPlatform == TargetPlatform.android
-      ? false
-      : true;
+  bool _settingsReady =
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android ? false : true;
   String? _errorTitle;
   String? _errorMessage;
+
+  static const _viewportUserScript = r'''
+(function () {
+  function setViewport() {
+    var head = document.head || document.getElementsByTagName('head')[0];
+    if (!head) return;
+
+    var viewport = document.querySelector('meta[name="viewport"]');
+    if (!viewport) {
+      viewport = document.createElement('meta');
+      viewport.name = 'viewport';
+      head.appendChild(viewport);
+    }
+    viewport.setAttribute(
+      'content',
+      'width=device-width, initial-scale=1.0, viewport-fit=cover'
+    );
+  }
+
+  setViewport();
+  document.addEventListener('DOMContentLoaded', setViewport, { once: true });
+})();
+''';
 
   InAppWebViewSettings _buildSettings({String? userAgent}) {
     final settings = InAppWebViewSettings(
       isInspectable: kDebugMode,
       javaScriptEnabled: true,
+      clearCache: true,
+      cacheMode: CacheMode.LOAD_NO_CACHE,
       javaScriptCanOpenWindowsAutomatically: true,
       mediaPlaybackRequiresUserGesture: false,
       allowContentAccess: true,
@@ -94,6 +119,19 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
       widget.title.isEmpty || _titlesWithoutAppBar.contains(widget.title);
 
   bool get _hasHtmlData => widget.data != null && widget.data!.isNotEmpty;
+
+  WebUri? get _htmlBaseUrl {
+    if (!_hasHtmlData) {
+      return null;
+    }
+
+    final uri = Uri.tryParse(_normalizedUrl);
+    if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+      return null;
+    }
+
+    return WebUri(_normalizedUrl);
+  }
 
   String get _normalizedUrl {
     final trimmed = widget.url.trim();
@@ -171,11 +209,9 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
         return;
       }
       setState(() => _isLoading = false);
-      if (kDebugMode) {
-        debugPrint(
-          'MyWebsiteView: loading timeout — hiding indicator for $_normalizedUrl',
-        );
-      }
+      print(
+        '[WebView timeout] Hiding loading indicator for $_normalizedUrl',
+      );
     });
   }
 
@@ -222,6 +258,8 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
   }
 
   void _setError({required String title, required String message}) {
+    print('[WebView error] $title: $message');
+
     if (!mounted) {
       return;
     }
@@ -307,14 +345,17 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
 
     try {
       if (_hasHtmlData) {
-        await controller.loadData(data: widget.data!);
+        await controller.loadData(
+          data: widget.data!,
+          baseUrl: _htmlBaseUrl,
+        );
       } else {
         await controller.loadUrl(
           urlRequest: URLRequest(url: WebUri(_normalizedUrl)),
         );
       }
     } catch (error, stackTrace) {
-      debugPrint('MyWebsiteView retry failed: $error\n$stackTrace');
+      print('MyWebsiteView retry failed: $error\n$stackTrace');
       _setError(
         title: 'Unable to open page',
         message: error.toString(),
@@ -324,12 +365,18 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
 
   Future<void> _onWebViewCreated(InAppWebViewController controller) async {
     _webViewController = controller;
+    print('[WebView created]');
+  }
+
+  Future<void> _injectViewportMeta(InAppWebViewController controller) async {
+    await controller.evaluateJavascript(source: _viewportUserScript);
   }
 
   Future<PermissionResponse?> _onPermissionRequest(
     InAppWebViewController controller,
     PermissionRequest request,
   ) async {
+    print('[WebView permission] resources=${request.resources}');
     return PermissionResponse(
       resources: request.resources,
       action: PermissionResponseAction.GRANT,
@@ -340,6 +387,16 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
     InAppWebViewController controller,
     ConsoleMessage consoleMessage,
   ) async {
+    print(
+      '🌐 WEBVIEW CONSOLE '
+      '[${consoleMessage.messageLevel}] '
+      '${consoleMessage.message}',
+    );
+    print(
+      '[WebView console][${consoleMessage.messageLevel}] '
+      '${consoleMessage.message}',
+    );
+
     final started = await handleConsoleDownload(consoleMessage.message);
     if (started) {
       await _showDownloadStartedSnackBar();
@@ -350,10 +407,71 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
     InAppWebViewController controller,
     DownloadStartRequest request,
   ) async {
+    print('[WebView download] ${request.url}');
     final started = await handleDownloadRequest(request.url.toString());
     if (started) {
       await _showDownloadStartedSnackBar();
     }
+  }
+
+  Uri? _resolveIntentUri(Uri uri) {
+    if (uri.scheme != 'intent') {
+      return null;
+    }
+
+    final intentData = uri.fragment;
+    final fallbackMatch = RegExp(
+      r'(?:S\.browser_fallback_url|browser_fallback_url)=([^;]+)',
+    ).firstMatch(intentData);
+    if (fallbackMatch != null) {
+      return Uri.tryParse(Uri.decodeComponent(fallbackMatch.group(1)!));
+    }
+
+    final schemeMatch = RegExp(r'(?:^|;)scheme=([^;]+)').firstMatch(intentData);
+    final scheme = schemeMatch?.group(1);
+    if (scheme == null || uri.host.isEmpty) {
+      return null;
+    }
+
+    return Uri(
+      scheme: scheme,
+      host: uri.host,
+      port: uri.hasPort ? uri.port : null,
+      path: uri.path,
+      query: uri.query,
+    );
+  }
+
+  Future<NavigationActionPolicy> _handleIntentNavigation(
+    InAppWebViewController controller,
+    Uri uri,
+  ) async {
+    final resolvedUri = _resolveIntentUri(uri);
+    if (resolvedUri == null) {
+      _setError(
+        title: 'Link blocked',
+        message: 'This link does not provide a browser-compatible address.',
+      );
+      return NavigationActionPolicy.CANCEL;
+    }
+
+    if (resolvedUri.scheme == 'http' || resolvedUri.scheme == 'https') {
+      await controller.loadUrl(
+        urlRequest: URLRequest(url: WebUri(resolvedUri.toString())),
+      );
+      return NavigationActionPolicy.CANCEL;
+    }
+
+    if (await canLaunchUrl(resolvedUri)) {
+      await launchUrl(resolvedUri, mode: LaunchMode.externalApplication);
+      return NavigationActionPolicy.CANCEL;
+    }
+
+    _setError(
+      title: 'Link blocked',
+      message: 'Cannot open link with scheme "${resolvedUri.scheme}".',
+    );
+    return NavigationActionPolicy.CANCEL;
   }
 
   Future<NavigationActionPolicy> _shouldOverrideUrlLoading(
@@ -363,6 +481,10 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
     final uri = navigationAction.request.url;
     if (uri == null) {
       return NavigationActionPolicy.ALLOW;
+    }
+
+    if (uri.scheme == 'intent') {
+      return _handleIntentNavigation(controller, uri);
     }
 
     if (_allowedSchemes.contains(uri.scheme)) {
@@ -505,12 +627,22 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
     return InAppWebView(
       key: _webViewKey,
       initialData: _hasHtmlData
-          ? InAppWebViewInitialData(data: widget.data!)
+          ? InAppWebViewInitialData(
+              data: widget.data!,
+              baseUrl: _htmlBaseUrl,
+            )
           : null,
       initialUrlRequest: !_hasHtmlData && _normalizedUrl.isNotEmpty
           ? URLRequest(url: WebUri(_normalizedUrl))
           : null,
       initialSettings: _settings,
+      initialUserScripts: UnmodifiableListView<UserScript>([
+        UserScript(
+          source: _viewportUserScript,
+          injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+          forMainFrameOnly: false,
+        ),
+      ]),
       pullToRefreshController: _pullToRefreshController,
       onWebViewCreated: _onWebViewCreated,
       onPermissionRequest: _onPermissionRequest,
@@ -518,6 +650,7 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
       onDownloadStartRequest: _onDownloadStartRequest,
       shouldOverrideUrlLoading: _shouldOverrideUrlLoading,
       onLoadStart: (controller, uri) {
+        print('[WebView load start] ${uri?.toString() ?? _normalizedUrl}');
         _clearError();
         if (!mounted) {
           return;
@@ -527,18 +660,15 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
           _progress = 0;
         });
         _startLoadingTimeout();
-        if (kDebugMode) {
-          debugPrint('MyWebsiteView loading: ${uri?.toString() ?? _normalizedUrl}');
-        }
       },
       onLoadStop: (controller, uri) {
+        print('[WebView load stop] ${uri?.toString() ?? _normalizedUrl}');
+        unawaited(_injectViewportMeta(controller));
         _endRefreshing();
         _finishLoading();
-        if (kDebugMode) {
-          debugPrint('MyWebsiteView loaded: ${uri?.toString()}');
-        }
       },
       onProgressChanged: (controller, progress) {
+        print('[WebView progress] $progress');
         if (progress == 100) {
           _endRefreshing();
           _finishLoading();
@@ -550,6 +680,11 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
         }
       },
       onReceivedError: (controller, request, error) {
+        print(
+          '[WebView resource error] url=${request.url} '
+          'mainFrame=${request.isForMainFrame} type=${error.type} '
+          'description=${error.description}',
+        );
         if (!_isMainFrameRequest(request)) {
           return;
         }
@@ -562,6 +697,10 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
         );
       },
       onReceivedHttpError: (controller, request, response) {
+        print(
+          '[WebView HTTP error] url=${request.url} '
+          'status=${response.statusCode} reason=${response.reasonPhrase}',
+        );
         if (!_isMainFrameRequest(request)) {
           return;
         }
@@ -578,9 +717,11 @@ class _MyWebsiteViewState extends State<MyWebsiteView> {
         );
       },
       onReceivedServerTrustAuthRequest: (controller, challenge) {
+        print('[WebView SSL challenge] $challenge');
         return handleServerTrustAuthRequest(challenge);
       },
       onRenderProcessGone: (controller, detail) {
+        print('[WebView renderer gone] didCrash=${detail.didCrash}');
         _setError(
           title: 'WebView crashed',
           message: detail.didCrash

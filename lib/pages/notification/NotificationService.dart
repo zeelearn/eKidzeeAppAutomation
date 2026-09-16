@@ -10,6 +10,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../../app_routes.dart';
 import '../../helper/KidzeePref.dart';
 import '../../helper/LocalConstant.dart';
+import '../../helper/utils.dart';
 import '../../main.dart';
 import '../home/model/StatusModel.dart';
 
@@ -155,6 +156,9 @@ class NotificationService {
     String? count =
         await KidzeePref().getString(LocalConstant.KEY_NOTIFICATION_COUNT);
 
+    final payload =
+        await getPayloadForNotificationClick(message, title, body);
+
     AwesomeNotifications().createNotification(
         content: NotificationContent(
             id: -1,
@@ -169,36 +173,45 @@ class NotificationService {
                         .getString(LocalConstant.KEY_NOTIFICATION_COUNT) ??
                     '0')
                 : null,
-            payload: getPayloadForNotificationClick(message, title, body)));
+            payload: payload));
 //     debugPrint('showSimpleNotification');
   }
 
-  Map<String, String?> getPayloadForNotificationClick(
-      RemoteMessage? message, String title, String body) {
-    return message?.data['type'] == 'cogniHW'
-        ? {"title": title, "body": body, 'type': message?.data['type']}
-        : message!.data['type'] == 'td'
-            ? {
-                'promo': "saathi",
-                "title": title,
-                "body": body,
-                "id": message.data['id'],
-                "business_user_id": message.data['business_user_id'],
-                "type": message.data['type'],
-                "bigimage": message.data['bigimage'],
-                "actionUrl": message.data['actionUrl'] ?? ''
-              }
-            : message.data['type'] == 'promo'
-                ? {
-                    'promo': "true",
-                    "title": title,
-                    "body": body,
-                    "bigimage": message.data['bigimage'],
-                    "actionUrl": message.data['actionUrl'] ?? ''
-                  }
-                : message.data['type'] == 'logout'
-                    ? {'type': message.data['type']}
-                    : {'url': (message.data['url'] ?? '')};
+  Future<Map<String, String?>> getPayloadForNotificationClick(
+      RemoteMessage? message, String title, String body) async {
+    Map<String, String?> payload;
+    if (message?.data['type'] == 'cogniHW') {
+      payload = {"title": title, "body": body, 'type': message?.data['type']};
+    } else if (message!.data['type'] == 'td') {
+      payload = {
+        'promo': "saathi",
+        "title": title,
+        "body": body,
+        "id": message.data['id'],
+        "business_user_id": message.data['business_user_id'],
+        "type": message.data['type'],
+        "bigimage": message.data['bigimage'],
+        "actionUrl": message.data['actionUrl'] ?? ''
+      };
+    } else if (message.data['type'] == 'promo') {
+      payload = {
+        'promo': "true",
+        "title": title,
+        "body": body,
+        "bigimage": message.data['bigimage'],
+        "actionUrl": message.data['actionUrl'] ?? ''
+      };
+    } else if (message.data['type'] == 'logout') {
+      payload = {'type': message.data['type']};
+    } else {
+      payload = {
+        'url': (message.data['url'] ?? ''),
+        if (message.data['type'] != null) 'type': message.data['type'],
+      };
+    }
+
+    // Ensure <uid>/<userid>/… placeholders are resolved before tap handling.
+    return Utility.resolveNotificationPayloadPlaceholders(payload);
   }
 
   Future<void> showBigNotification(String title, String body, String logo,
@@ -229,25 +242,9 @@ class NotificationService {
             icon: 'resource://drawable/app_logo',
             backgroundColor: Colors.white54,
             largeIcon: imageUrl,
-            // payload: {
-            //   'url': message != null ? (message.data['url'] ?? '') : '',
-            //   'type': message != null ? (message.data['type'] ?? '') : '',
-            //   'topic': message != null ? (message.data['topic'] ?? '') : '',
-            //   'bigimage': message != null ? (message.data['bigimage'] ?? '') : ''
-            // },
             notificationLayout: NotificationLayout.BigText,
             bigPicture: imageUrl,
-            payload: getPayloadForNotificationClick(message, title,
-                body) /* message.data['type'] == 'promo'
-                ? {
-                    'promo': "true",
-                    "title": title,
-                    "body": body,
-                    "bigimage": imageUrl,
-                    "actionUrl": message.data['actionUrl'] ?? ''
-                  }
-                : {'url': message != null ? (message.data['url'] ?? '') : ''} */
-            ),
+            payload: await getPayloadForNotificationClick(message, title, body)),
       );
     } else {
       await AwesomeNotifications().createNotification(
@@ -267,17 +264,8 @@ class NotificationService {
             backgroundColor: Colors.white54,
             largeIcon: imageUrl,
             notificationLayout: NotificationLayout.BigPicture,
-            payload: getPayloadForNotificationClick(message, title,
-                body) /* message.data['type'] == 'promo'
-                ? {
-                    'promo': "true",
-                    "title": title,
-                    "body": body,
-                    "bigimage": imageUrl,
-                    "actionUrl": message.data['actionUrl'] ?? ''
-                  }
-                : {'url': message != null ? (message.data['url'] ?? '') : ''} */
-            ,
+            payload:
+                await getPayloadForNotificationClick(message, title, body),
             bigPicture: imageUrl),
       );
     }

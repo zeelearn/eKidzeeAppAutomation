@@ -198,6 +198,7 @@ class _MyHomeworkScreenState extends State<MyHomeworkScreen>
                       title: response.homeworkList[i].Worksheet,
                       filename: '${response.homeworkList[i].Worksheet}.pdf',
                       module: 'phomework',
+                      isDownload: false,
                       model: response.homeworkList[i],
                       imageUploadFunction: () {
                         if (userType != 'P' &&
@@ -641,6 +642,7 @@ class _MyHomeworkScreenState extends State<MyHomeworkScreen>
                             title: model.Worksheet,
                             filename: '${model.Worksheet}.pdf',
                             module: 'phomework',
+                            isDownload: false,
                           ),
                         ),
                       );
@@ -826,6 +828,7 @@ class _MyHomeworkScreenState extends State<MyHomeworkScreen>
                           title: model.Worksheet,
                           filename: '${model.Worksheet}.pdf',
                           module: 'phomework',
+                          isDownload: false,
                         ),
                       ),
                     );

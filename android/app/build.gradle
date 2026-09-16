@@ -67,7 +67,7 @@ kotlinOptions {
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-build-configuration.
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
 
         versionCode 223
         versionName 'kidzee_2.8.0'
@@ -120,7 +120,7 @@ kotlinOptions {
             dimension "app"
             resValue "string", "app_name", "Kidzee"
             applicationId "com.zeelearn.ekidzee"
-            versionCode 231
+            versionCode 236
             versionName 'kidzee_2.8.4'
             
             def vName = versionName

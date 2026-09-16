@@ -300,6 +300,7 @@ class _LessonPlanScreenState extends State<LessonPlanScreen>
                 title: model.ContentDescription,
                 filename: model.ContentDescription,
                 module: 'lessonplan',
+                isDownload: false,
               ),
             ),
           );
@@ -359,6 +360,7 @@ class _LessonPlanScreenState extends State<LessonPlanScreen>
                         title: model.ContentDescription,
                         filename: model.ContentDescription,
                         module: 'lessonplan',
+                        isDownload: false,
                       ),
                     ),
                   );

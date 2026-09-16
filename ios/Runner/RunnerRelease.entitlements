@@ -6,8 +6,8 @@
 	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks://zeelearn.saathi.com</string>
-		<string>applinks://kidzee.com</string>
+		<string>applinks:zeelearn.saathi.com</string>
+		<string>applinks:pentemind.kidzee.com</string>
 		<string>webcredentials:kidzee.com</string>
 	</array>
 </dict>

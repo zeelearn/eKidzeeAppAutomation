@@ -4,19 +4,26 @@ import 'package:flutter/foundation.dart';
 ///
 /// Mobile/desktop apps are unchanged. On web:
 /// - eKidzee API paths use the current page origin when hosted on eKidzee domains.
-/// - Dyntube HLS streams can be routed through a CDN proxy (same infra as PDF viewer).
+/// - Cross-origin media (Dyntube, ZeeLearn CDN, S3, etc.) routes through CDN proxy.
 class WebOriginUrl {
   WebOriginUrl._();
 
   static const String _ekidzeeAppHost = 'app.ekidzee.com';
-  static const String _dyntubeHost = 'api.dyntube.com';
   static const String _cdnProxyPrefix =
       'https://cdn-proxy-umber.vercel.app/api/proxy?path=';
 
+  /// Hosts that commonly fail CORS when fetched directly from the browser.
+  static const Set<String> _proxyMediaHosts = {
+    'api.dyntube.com',
+    'cdn.dyntube.net',
+    'cdn.zeelearn.com',
+    's3.ap-south-1.amazonaws.com',
+    'content.pentemind.com',
+    'firebasestorage.googleapis.com',
+    '103.241.146.154',
+  };
+
   /// Builds a URL for legacy `app.ekidzee.com` API routes.
-  ///
-  /// On web, prefer [appEkidzeeApiViaPentemind] when the endpoint is also
-  /// exposed on the pentemind/kubapi host (same as login and parent info).
   static String appEkidzeeApi(String apiPath) {
     final path = apiPath.startsWith('/') ? apiPath : '/$apiPath';
     if (kIsWeb) {
@@ -37,7 +44,8 @@ class WebOriginUrl {
     return '$base$path';
   }
 
-  /// Rewrites media stream URLs for web playback when the source is cross-origin.
+  /// Rewrites media stream / asset URLs for web playback when the source is
+  /// cross-origin and known to need a proxy.
   static String mediaStreamUrl(String url) {
     if (!kIsWeb || url.isEmpty) {
       return url;
@@ -48,19 +56,23 @@ class WebOriginUrl {
       return url;
     }
 
-    if (uri.host.toLowerCase() != _dyntubeHost) {
+    final host = uri.host.toLowerCase();
+    if (!_needsMediaProxy(host)) {
       return url;
     }
 
-    if (_isEkidzeeHosted(Uri.base.origin)) {
-      // Requires server rewrite, e.g. nginx:
-      // location /media-proxy/ { proxy_pass https://api.dyntube.com/; }
+    // Prefer same-origin media-proxy only for Dyntube when hosted on Kidzee
+    // domains (requires nginx: /media-proxy/ -> api.dyntube.com/).
+    if (host == 'api.dyntube.com' && _isEkidzeeHosted(Uri.base.origin)) {
       return '${Uri.base.origin}/media-proxy${uri.path}'
           '${uri.hasQuery ? '?${uri.query}' : ''}';
     }
 
     return cdnProxyUrl(url);
   }
+
+  /// Optional helper for NetworkImage / thumbnail URLs on web.
+  static String assetUrl(String url) => mediaStreamUrl(url);
 
   /// CDN proxy used elsewhere in the app (PDF viewer) for cross-origin assets.
   static String cdnProxyUrl(String url) =>
@@ -79,6 +91,16 @@ class WebOriginUrl {
 
   static bool isHlsUrl(String url) =>
       url.toLowerCase().contains('.m3u8');
+
+  static bool _needsMediaProxy(String host) {
+    if (_proxyMediaHosts.contains(host)) return true;
+    for (final allowed in _proxyMediaHosts) {
+      if (host == allowed || host.endsWith('.$allowed')) return true;
+    }
+    // Any amazonaws S3 regional host.
+    if (host.endsWith('.amazonaws.com')) return true;
+    return false;
+  }
 
   static bool _isEkidzeeHosted(String origin) {
     final host = Uri.tryParse(origin)?.host.toLowerCase() ?? '';

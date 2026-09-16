@@ -1,4 +1,6 @@
 import 'package:ekidzee/api/response/bpms/getTaskDetailsResponseModel.dart';
+import 'package:ekidzee/helper/utils.dart';
+import 'package:ekidzee/helper/web_origin_url.dart';
 import 'package:ekidzee/pages/attendance/TableEventsExample.dart' /* deferred as tableEventsExample */;
 import 'package:ekidzee/pages/attendance/Teach/class_attendance.dart' /* deferred as classAttendance */;
 import 'package:ekidzee/pages/bpms/auth/ui/ChatPage.dart' /* deferred as chatPage */;
@@ -17,15 +19,16 @@ import 'package:ekidzee/pages/notification/UserNotification.dart' /* deferred as
 import 'package:ekidzee/pages/social.dart' /* deferred as social */;
 import 'package:ekidzee/pages/tracker_indent/TrackerOrderScreen.dart' /* deferred as trackerOrderScreen */;
 import 'package:ekidzee/pages/userinfo/MyInfoScreen.dart' /* deferred as myInfoScreen */;
-import 'package:ekidzee/qr/qr_scanner.dart' /* deferred as qrScanner */;
+import 'package:ekidzee/qr/qr_scannerv2.dart';
 import 'package:ekidzee/videoplayer/AudioPlayer.dart' /* deferred as audioPlayer */;
 import 'package:ekidzee/videoplayer/KltChewieDemo.dart';
 import 'package:ekidzee/videoplayer/RhymesPlayer.dart' /* deferred as rhymesPlayer */;
 import 'package:ekidzee/videoplayer/VideoPlayer.dart' /* deferred as videoPlayer */;
 import 'package:ekidzee/widget/MyWebSiteView.dart'; /* deferred as mywebsiteview; */
 import 'package:ekidzee/widget/image_viewer.dart' /* deferred as imageViewer */;
-import 'package:ekidzee/helper/web_origin_url.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'constants.dart';
 import 'pages/klt/models/rhymesmodel.dart';
@@ -72,6 +75,38 @@ Widget goToMYWebsite({required String title, required String url}) =>
             mywebsiteview.MyWebsiteView(title: title, url: url)) */
     ;
 
+/// Celebration / promo web links: open externally on iOS (Safari),
+/// keep in-app WebView on Android/web.
+Future<void> openCelebrationWebsite(
+  BuildContext context, {
+  required String title,
+  required String url,
+  bool popCurrent = false,
+}) async {
+  final resolvedUrl = await Utility.resolveUserPlaceholdersFromSession(url);
+  if (resolvedUrl.trim().isEmpty) return;
+
+  if (kIsWeb || defaultTargetPlatform == TargetPlatform.iOS) {
+    final uri = Uri.tryParse(resolvedUrl);
+    if (uri == null) return;
+    if (popCurrent && context.mounted) {
+      Navigator.of(context).pop();
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    return;
+  }
+
+  if (popCurrent && context.mounted) {
+    Navigator.of(context).pop();
+  }
+  if (!context.mounted) return;
+  await Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => goToMYWebsite(title: title, url: resolvedUrl),
+    ),
+  );
+}
+
 Widget goToKltChewieVideo({required String filePath, required String Title}) =>
     KltChewieDemo(
         filePath: filePath,
@@ -103,12 +138,14 @@ Widget goToMyPdf(
         {required String worksheetUrl,
         required String title,
         required String filename,
-        required String module}) =>
+        required String module,
+        bool isDownload = false}) =>
     MyPdfApp(
       worksheetUrl: worksheetUrl,
       title: title,
       filename: filename,
       module: module,
+      isDownload: isDownload,
     ) /*  getDeferredWidget(
         loadLibrary: pdfviewer.loadLibrary(),
         child: (context) => pdfviewer.MyPdfApp(
@@ -116,6 +153,7 @@ Widget goToMyPdf(
               title: title,
               filename: filename,
               module: module,
+              isDownload: isDownload,
             )) */
     ;
 
@@ -262,7 +300,7 @@ Widget goToChatPage({
     ;
 
 Widget goToKidzeeQRScreen() =>
-    KidzeeQRScreen() /* getDeferredWidget(
+    KidzeeQRScreenV2() /* getDeferredWidget(
     loadLibrary: qrScanner.loadLibrary(),
     child: (context) => qrScanner.KidzeeQRScreen()) */
     ;

@@ -392,7 +392,7 @@ class ApiServiceHandler {
     apiService.getCelibrationEvents(request).then((value) {
       if (value != null) {
         debugPrint('in getCelibration respons e');
-        debugPrint(value);
+        //debugPrint(value);
         ZllResourceResponse responseModel;
         if (value != null) {
           responseModel = value;

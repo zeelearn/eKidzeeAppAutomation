@@ -83,7 +83,7 @@ class DBHelper {
 
   static const String _webDatabaseName = 'ekidzee.db';
 
-  static initDb() async {
+  static Future<Future<sql.Database>> initDb() async {
     await initSqflitePlatform();
 
     final String databasePath;
@@ -95,8 +95,7 @@ class DBHelper {
     }
 
     // open if found, create if not found for db
-    return sql.openDatabase(databasePath,
-        onCreate: (db, version) {
+    return sql.openDatabase(databasePath, onCreate: (db, version) {
       db.execute(CREATE_TABLE_PARENT_INFO);
       db.execute(CREATE_TABLE_NOTIFICATION);
       db.execute(CREATE_TABLE_BACKGROUND_SYNC);
@@ -137,6 +136,18 @@ class DBHelper {
   Future<void> deleteData(String table) async {
     final dbClient = await db;
     dbClient.delete(table, where: '', whereArgs: []);
+  }
+
+  Future<void> deleteNotification({
+    required String title,
+    required String date,
+  }) async {
+    final dbClient = await db;
+    await dbClient.delete(
+      LocalConstant.TABLE_NOTIFICATION,
+      where: 'title = ? AND date = ?',
+      whereArgs: [title, date],
+    );
   }
 
   /// update data in db

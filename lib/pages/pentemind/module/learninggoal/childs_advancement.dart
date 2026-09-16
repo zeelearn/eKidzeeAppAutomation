@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../api/APIService.dart';
@@ -26,6 +25,7 @@ import '../../../../helper/utils.dart';
 import '../../../../main.dart';
 import '../../../../utils/theme/colors/light_colors.dart';
 import '../../../notification/NotificationService.dart';
+import 'learning_goal_ui.dart';
 
 class ChildsAdvancementScreen extends StatefulWidget {
   const ChildsAdvancementScreen({super.key});
@@ -429,36 +429,10 @@ class _ChildsAdvancementState extends State<ChildsAdvancementScreen>
   Widget build(BuildContext context) {
     FirebaseAnalyticsUtils().sendAnalyticsEvent("CHILD'S ADVANCEMENT");
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
-      appBar: AppBar(
-        centerTitle: false,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "CHILD'S ADVANCEMENT",
-              style: GoogleFonts.roboto(
-                fontSize: 15,
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (className.isNotEmpty)
-              Text(
-                className,
-                style: GoogleFonts.roboto(
-                  fontSize: 11,
-                  color: Colors.white70,
-                ),
-              ),
-          ],
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        backgroundColor: kPrimaryLightColor,
-        elevation: 0,
+      backgroundColor: LearningGoalUi.pageBackground,
+      appBar: LearningGoalUi.appBar(
+        title: "CHILD'S ADVANCEMENT",
+        subtitle: className.isNotEmpty ? className : null,
         actions: [
           if (isRefreshing)
             const Padding(
@@ -479,7 +453,7 @@ class _ChildsAdvancementState extends State<ChildsAdvancementScreen>
       body: SafeArea(
         child: Column(
           children: [
-            if (isOfflineCache) _offlineBanner(),
+            if (isOfflineCache) LearningGoalUi.offlineBanner(),
             Expanded(
               child: RefreshIndicator(
                 key: _refreshIndicatorKey,
@@ -497,34 +471,11 @@ class _ChildsAdvancementState extends State<ChildsAdvancementScreen>
     );
   }
 
-  Widget _offlineBanner() {
-    return Material(
-      color: const Color(0xFFFFF4E5),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        child: Row(
-          children: [
-            const Icon(Icons.cloud_off, size: 18, color: Color(0xFFB76E00)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Showing saved offline data. Pull to refresh when online.',
-                style: GoogleFonts.roboto(
-                  fontSize: 12,
-                  color: const Color(0xFF8A5A00),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget getchildAdvancementList() {
     if (isLoading) {
-      return Center(
-        child: Lottie.asset('assets/json/kidzee_loader.json'),
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [SizedBox(height: MediaQuery.of(context).size.height * 0.35, child: LearningGoalUi.loading())],
       );
     }
 
@@ -538,104 +489,70 @@ class _ChildsAdvancementState extends State<ChildsAdvancementScreen>
       );
     }
 
-    return ListView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-      itemCount: childAdvancementModelList.length,
-      itemBuilder: (context, index) {
-        return generateChildAdvancementListRow(
-          childAdvancementModelList[index],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = LearningGoalUi.contentMaxWidth(constraints.maxWidth);
+        return LearningGoalUi.centeredContent(
+          maxWidth: maxWidth,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: LearningGoalUi.pagePadding(constraints.maxWidth),
+            itemCount: childAdvancementModelList.length,
+            itemBuilder: (context, index) {
+              return generateChildAdvancementListRow(
+                childAdvancementModelList[index],
+                constraints.maxWidth,
+              );
+            },
+          ),
         );
       },
     );
   }
 
-  Widget generateChildAdvancementListRow(ChildAdvancementModel model) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+  Widget generateChildAdvancementListRow(
+      ChildAdvancementModel model, double width) {
+    return LearningGoalUi.studentCardShell(
+      header: LearningGoalUi.studentHeader(
+        name: model.studentName,
+        subtitle: '${model.advancement.length} categories',
+        avatar: CircleAvatar(
+          radius: 22,
+          backgroundColor: LightColors.kLightGray,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: model.iSphoto
+                ? GestureDetector(
+                    onTap: () =>
+                        Utility.viewimage(context, model.studentprofileURL),
+                    child: Utility.getImageWidget(
+                      model.studentprofileURL,
+                      'assets/icons/ic_student.png',
+                    ),
+                  )
+                : Image.asset(
+                    'assets/icons/ic_student.png',
+                    fit: BoxFit.cover,
+                  ),
           ),
-        ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: LightColors.kLightGray,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(22),
-                    child: model.iSphoto
-                        ? GestureDetector(
-                            onTap: () => Utility.viewimage(
-                                context, model.studentprofileURL),
-                            child: Utility.getImageWidget(
-                              model.studentprofileURL,
-                              'assets/icons/ic_student.png',
-                            ),
-                          )
-                        : Image.asset(
-                            'assets/icons/ic_student.png',
-                            fit: BoxFit.cover,
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        model.studentName,
-                        style: GoogleFonts.roboto(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      Text(
-                        '${model.advancement.length} categories',
-                        style: GoogleFonts.roboto(
-                          fontSize: 12,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
+        child: GridView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: LearningGoalUi.gridCrossAxisCount(width),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: LearningGoalUi.gridChildAspectRatio(width),
           ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: 2,
-              ),
-              itemCount: model.advancement.length,
-              itemBuilder: (context, index) {
-                return getTermCard(model, model.advancement[index]);
-              },
-            ),
-          ),
-        ],
+          itemCount: model.advancement.length,
+          itemBuilder: (context, index) {
+            return getTermCard(model, model.advancement[index]);
+          },
+        ),
       ),
     );
   }

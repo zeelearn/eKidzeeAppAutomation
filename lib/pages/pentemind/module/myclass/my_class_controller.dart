@@ -148,11 +148,13 @@ class MyClassController extends BaseMyClassController implements onResponse {
     String cacheKey = '${uid}_${programId}_CULMINATION_LIST';
     bool internet = await Utility.isInternet();
     isInternet.value = internet;
+    print('Fetching culmination list. Internet available: $internet');
 
     if (internet) {
       GetCulminationRequest request = GetCulminationRequest(termType: term);
       try {
         final value = await apiService.getCulmination(request, token);
+        print('API response for culmination list: $value');
         if (value is CulminationResponse) {
           mCulminations = value;
           if (value.data != null && value.data!.isNotEmpty) {
@@ -160,7 +162,12 @@ class MyClassController extends BaseMyClassController implements onResponse {
             options.assignAll(['Culmination']);
             options.addAll(value.data!.map((e) => e.culminationName!).toList());
             return;
+          } else {
+            print('No culmination data received from API.');
           }
+        } else {
+          print(
+              'Unexpected response type for culmination list: ${value.runtimeType}');
         }
       } catch (e) {
         log('Error fetching culmination list: $e');

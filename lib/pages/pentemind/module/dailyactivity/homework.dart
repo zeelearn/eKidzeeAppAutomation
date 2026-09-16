@@ -287,6 +287,7 @@ class _HomeworkScreenState extends State<HomeworkScreen>
                                   title: model.Worksheet,
                                   filename: '${model.Worksheet}.pdf',
                                   module: 'homework',
+                                  isDownload: false,
                                 ),
                               ),
                             );

@@ -99,7 +99,7 @@ class KidzeeBottomSheet {
                         ),
                     ],
                   ),
-                  onTap: () {
+                  onTap: () async {
 //                     debugPrint('on Tap 92');
 //                     debugPrint('in 94 ${model.viewurl}');
                     if (model.viewurl.isEmpty) {
@@ -114,10 +114,12 @@ class KidzeeBottomSheet {
                       );
                     } else {
 //                       debugPrint('in else');
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (BuildContext context) => goToMYWebsite(
-                            title: model.title, url: model.viewurl),
-                      ));
+                      await openCelebrationWebsite(
+                        context,
+                        title: model.title,
+                        url: model.viewurl,
+                        popCurrent: true,
+                      );
                     }
                   },
                 ),
@@ -288,7 +290,7 @@ class KidzeeBottomSheet {
                                 ),
                               ],
                             ),
-                            onTap: () {
+                            onTap: () async {
 //                               debugPrint('on Tap 92');
                               //_controller.pause();
 //                               debugPrint('in 94 ${model.viewurl}');
@@ -304,12 +306,12 @@ class KidzeeBottomSheet {
                                 );
                               } else {
 //                                 debugPrint('in else');
-                                Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (BuildContext context) =>
-                                        goToMYWebsite(
-                                          title: model.title,
-                                          url: model.viewurl,
-                                        )));
+                                await openCelebrationWebsite(
+                                  context,
+                                  title: model.title,
+                                  url: model.viewurl,
+                                  popCurrent: true,
+                                );
                               }
                               //Navigator.pop(context);
                             },

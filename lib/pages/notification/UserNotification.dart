@@ -15,14 +15,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../model/NotificationModel.dart';
 
 class UserNotification extends StatefulWidget {
-  const UserNotification({Key? key}) : super(key: key);
+  const UserNotification({super.key});
 
   @override
   _ListPageState createState() => _ListPageState();
 }
 
 class _ListPageState extends State<UserNotification> {
-  late List lessons = [];
+  List<NotificationModel> lessons = [];
 
   @override
   void initState() {
@@ -31,29 +31,36 @@ class _ListPageState extends State<UserNotification> {
     super.initState();
   }
 
-  void loadData() async {
+  Future<void> loadData() async {
     List<Map<String, dynamic>> list =
         await DBHelper().getData(LocalConstant.TABLE_NOTIFICATION);
-    //debugPrint('----${list.length}');
+    final loadedLessons = <NotificationModel>[];
     for (int index = 0; index < list.length; index++) {
       Map<String, dynamic> map = list[index];
-      //debugPrint('----${map['title']}');
-      debugPrint(map['date']);
-      lessons.add(NotificationModel(
-          notificationId: 0,
-          subject: map['title'],
-          notificationtype: map['type'],
-          message: map['description'],
-          image_url: map['imageurl'],
-          bigImageUrl: map['bigImageUrl'] ?? '',
-          logoUrl: map['logoUrl'] ?? '',
-          webViewUrl: map['webViewLink'] ?? '',
-          time: map['date'],
-          isSeen: 1,
-          indicatorValue: 1.0));
+      loadedLessons.add(NotificationModel(
+        notificationId: index,
+        subject: map['title'] ?? '',
+        notificationtype: map['type'] ?? '',
+        message: map['description'] ?? '',
+        image_url: map['imageurl'] ?? '',
+        bigImageUrl: map['bigImageUrl'] ?? '',
+        logoUrl: map['logoUrl'] ?? '',
+        webViewUrl: map['webViewLink'] ?? '',
+        time: map['date'] ?? '',
+        isSeen: 1,
+        indicatorValue: 1.0,
+      ));
     }
-    lessons = lessons.reversed.toList();
-    setState(() {});
+    if (!mounted) return;
+    setState(() => lessons = loadedLessons.reversed.toList());
+  }
+
+  Future<void> deleteNotification(NotificationModel notification) async {
+    setState(() => lessons.remove(notification));
+    await DBHelper().deleteNotification(
+      title: notification.subject,
+      date: notification.time,
+    );
   }
 
   String removeAllHtmlTags(String htmlText) {
@@ -62,102 +69,111 @@ class _ListPageState extends State<UserNotification> {
     return htmlText.replaceAll(exp, '');
   }
 
+  String formatNotificationTime(String value) {
+    try {
+      return DateFormat('MMM d, hh:mm a').format(
+        DateFormat('yyyy-MM-dd hh:mm a').parse(value),
+      );
+    } catch (_) {
+      return value;
+    }
+  }
+
+  Widget _notificationIcon(NotificationModel notification) {
+    if (notification.notificationtype == 'td') {
+      return Image.asset('assets/images/saathilogo.png');
+    }
+    return Icon(Icons.notifications_none_rounded, color: kPrimaryLightColor);
+  }
+
   @override
   Widget build(BuildContext context) {
-    TextStyle textStyle = TextStyle(
-        color: Colors.black, fontSize: 14, fontWeight: FontWeight.w400);
-    TextStyle urlStyle = TextStyle(
-        color: Colors.blue, fontSize: 14, fontWeight: FontWeight.w400);
-
-    TextStyle textHeaderStyle = TextStyle(
-        color: Colors.black, fontSize: 16, fontWeight: FontWeight.w400);
-    TextStyle urlHeaderStyle = TextStyle(
-        color: Colors.blue, fontSize: 16, fontWeight: FontWeight.w500);
+    final theme = Theme.of(context);
+    final textStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: const Color(0xFF4F535B),
+      fontSize: 14,
+      height: 1.45,
+    );
+    final urlStyle = textStyle?.copyWith(color: kPrimaryLightColor);
 
     ListTile makeListTile(NotificationModel notificationModel) => ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 5.0, vertical: 10.0),
+          contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
           leading: Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: notificationModel.image_url.isNotEmpty
-                ? Image.network(
-                    notificationModel.logoUrl,
-                    width: 40,
-                    height: 40,
-                    errorBuilder: (context, error, stackTrace) =>
-                        notificationModel.notificationtype == 'td'
-                            ? Image.asset(
-                                'assets/image/saathilogo.png',
-                                width: 32,
-                                height: 32,
-                              )
-                            : const Icon(Icons.notifications,
-                                color: Colors.grey),
-                  )
-                : const Icon(Icons.notifications, color: Colors.grey),
+            padding: const EdgeInsets.only(top: 2),
+            child: CircleAvatar(
+              radius: 22,
+              backgroundColor: const Color(0xFFF5F3F8),
+              child: notificationModel.logoUrl.isNotEmpty
+                  ? ClipOval(
+                      child: Image.network(
+                        notificationModel.logoUrl,
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            _notificationIcon(notificationModel),
+                      ),
+                    )
+                  : _notificationIcon(notificationModel),
+            ),
           ),
-
           minLeadingWidth: 0,
-          // isThreeLine: true,
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Expanded(
-                child: Text(
-                  notificationModel.subject,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-            ],
+          title: Text(
+            notificationModel.subject,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: const Color(0xFF171B24),
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              height: 1.2,
+            ),
           ),
-
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: UrlText(
-                  text: notificationModel.message,
-                  onHashTagPressed: (tag) {
-                    //cprint(tag);
-                  },
-                  style: textStyle,
-                  urlStyle: urlStyle,
+              const SizedBox(height: 8),
+              UrlText(
+                text: notificationModel.message,
+                onHashTagPressed: (tag) {},
+                style: textStyle,
+                urlStyle: urlStyle,
+              ),
+              if (notificationModel.bigImageUrl.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    notificationModel.bigImageUrl,
+                    width: double.infinity,
+                    height: 190,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 190,
+                      color: const Color(0xFFF1F1F3),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              // RichText(
-              //   overflow: TextOverflow.ellipsis,
-              //   maxLines: 2, // this will show dots(...) after 3 lines
-              //   strutStyle: const StrutStyle(fontSize: 10.0),
-              //   text: TextSpan(
-              //       style: GoogleFonts.lato(
-              //         textStyle: Theme.of(context).textTheme.labelLarge,
-              //       ),
-              //       text: removeAllHtmlTags(notificationModel.message)),
-              // ),
-              const SizedBox(
-                height: 6,
-              ),
+              ],
+              const SizedBox(height: 12),
               Align(
-                alignment: Alignment.bottomRight,
+                alignment: Alignment.centerRight,
                 child: Text(
-                  DateFormat('MMM/dd, hh:mm a').format(
-                      DateFormat('yyyy-MM-dd hh:mm a')
-                          .parse(notificationModel.time)),
-                  textAlign: TextAlign.end,
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelSmall!
-                      .copyWith(color: Colors.lightBlueAccent),
+                  formatNotificationTime(notificationModel.time),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: const Color(0xFF8B9099),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              )
+              ),
             ],
           ),
-
           onTap: () async {
             if (notificationModel.notificationtype == 'td') {
               SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -174,10 +190,6 @@ class _ListPageState extends State<UserNotification> {
                             businessUserId: '',
                             userId: userName,
                             mColor: kPrimaryLightColor,
-                            //businessUserID: receivedAction.payload!['business_user_id']!,
-                            //userID: routingData['u_id'],
-                            //role: routingData['r'],
-                            //dashboardClickListener: arguments?.$2,
                           )));
             } else {
               Navigator.push(
@@ -190,51 +202,70 @@ class _ListPageState extends State<UserNotification> {
         );
 
     Card makeCard(NotificationModel model) => Card(
-          elevation: 8.0,
-          // shape: const RoundedRectangleBorder(
-          //     borderRadius: BorderRadius.all(Radius.circular(5))),
-          margin: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10.0),
+          elevation: 0,
+          color: Colors.white,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: Color(0xFFF0F0F2)),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: makeListTile(model),
         );
 
-    final makeBody = lessons.isNotEmpty
-        ? ListView.builder(
-            scrollDirection: Axis.vertical,
-            shrinkWrap: true,
-            // reverse: true,
-            itemCount: lessons.length,
-            itemBuilder: (BuildContext context, int index) {
-              return makeCard(lessons[index]);
-            },
-          )
-        : Lottie.asset(no_Notification_Animtion);
+    final makeBody = RefreshIndicator(
+      color: kPrimaryLightColor,
+      onRefresh: loadData,
+      child: lessons.isNotEmpty
+          ? ListView.builder(
+              padding: const EdgeInsets.only(top: 8, bottom: 24),
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: lessons.length + 1,
+              itemBuilder: (BuildContext context, int index) {
+                if (index == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+                    child: Text(
+                      'Today',
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                    ),
+                  );
+                }
 
-    final makeBottom = SizedBox(
-      height: 55.0,
-      child: BottomAppBar(
-        color: Colors.white,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: <Widget>[
-            IconButton(
-              icon: const Icon(Icons.home, color: Colors.white),
-              onPressed: () {},
-            ),
-            IconButton(
-              icon: const Icon(Icons.blur_on, color: Colors.white),
-              onPressed: () {},
-            ),
-            IconButton(
-              icon: const Icon(Icons.hotel, color: Colors.white),
-              onPressed: () {},
-            ),
-            IconButton(
-              icon: const Icon(Icons.account_box, color: Colors.white),
-              onPressed: () {},
+                final notification = lessons[index - 1];
+                return Dismissible(
+                  key: ValueKey(
+                      '${notification.subject}_${notification.time}_$index'),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 15.0, vertical: 10.0),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade600,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 24),
+                    child: const Icon(Icons.delete_outline,
+                        color: Colors.white, size: 28),
+                  ),
+                  onDismissed: (_) => deleteNotification(notification),
+                  child: makeCard(notification),
+                );
+              },
             )
-          ],
-        ),
-      ),
+          : ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.65,
+                  child: Center(child: Lottie.asset(no_Notification_Animtion)),
+                ),
+              ],
+            ),
     );
     final topAppBar = AppBar(
       elevation: 1.0,
@@ -259,7 +290,7 @@ class _ListPageState extends State<UserNotification> {
     );
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF7F7F9),
 
       appBar: topAppBar,
       body: makeBody,

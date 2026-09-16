@@ -6,16 +6,18 @@ class ZllResourceResponse {
   late final int success;
   late final List<CelibrationModel> data;
 
-  ZllResourceResponse.fromJson(Map<String, dynamic> json){
+  ZllResourceResponse.fromJson(Map<String, dynamic> json) {
     success = json['success'];
-    data = List.from(json['data']).map((e)=>CelibrationModel.fromJson(e)).toList();
+    data = List.from(json['data'])
+        .map((e) => CelibrationModel.fromJson(e))
+        .toList();
   }
 
   Map<String, dynamic> toJson() {
-    final _data = <String, dynamic>{};
-    _data['success'] = success;
-    _data['data'] = data.map((e)=>e.toJson()).toList();
-    return _data;
+    final payload = <String, dynamic>{};
+    payload['success'] = success;
+    payload['data'] = data.map((e) => e.toJson()).toList();
+    return payload;
   }
 }
 
@@ -28,6 +30,7 @@ class CelibrationModel {
     required this.contenturl,
     required this.viewurl,
     required this.displayIn,
+    this.visibleTo = '',
   });
   late final int eventId;
   late final String title;
@@ -38,7 +41,7 @@ class CelibrationModel {
   late final String displayIn;
   late final String visibleTo;
 
-  CelibrationModel.fromJson(Map<String, dynamic> json){
+  CelibrationModel.fromJson(Map<String, dynamic> json) {
     eventId = json['event_id'];
     title = json['title'];
     validfrom = json['validfrom'];
@@ -50,15 +53,15 @@ class CelibrationModel {
   }
 
   Map<String, dynamic> toJson() {
-    final _data = <String, dynamic>{};
-    _data['event_id'] = eventId;
-    _data['title'] = title;
-    _data['validfrom'] = validfrom;
-    _data['validto'] = validto;
-    _data['contenturl'] = contenturl;
-    _data['viewurl'] = viewurl;
-    _data['display_in'] = displayIn;
-    _data['visible_to'] = visibleTo;
-    return _data;
+    final data = <String, dynamic>{};
+    data['event_id'] = eventId;
+    data['title'] = title;
+    data['validfrom'] = validfrom;
+    data['validto'] = validto;
+    data['contenturl'] = contenturl;
+    data['viewurl'] = viewurl;
+    data['display_in'] = displayIn;
+    data['visible_to'] = visibleTo;
+    return data;
   }
 }

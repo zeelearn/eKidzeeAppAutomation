@@ -5,6 +5,7 @@ import 'package:ekidzee/helper/LocalConstant.dart';
 import 'package:ekidzee/iface/onClick.dart';
 import 'package:ekidzee/utils/theme/colors/light_colors.dart';
 import 'package:ekidzee/widget/MyWidget.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -115,6 +116,11 @@ class _LearningMaterialScreenState extends State<PentemindFunActivityScreen>
   }
 
   checkFileStatus() async {
+    if (kIsWeb) {
+      imageList.clear();
+      if (mounted) setState(() {});
+      return;
+    }
     debugPrint(widget.contentType);
     imageList.clear();
     for (int index = 0; index < mMaterials.length; index++) {
@@ -122,29 +128,24 @@ class _LearningMaterialScreenState extends State<PentemindFunActivityScreen>
       String path = '$dir/${mMaterials[index].ContentDescription}.png';
       debugPrint(path);
       if (await File(path).exists()) {
-//         debugPrint('exists');
         imageList.putIfAbsent(
           mMaterials[index].ContentDescription,
           () => true,
         );
-      } else {
-//         debugPrint('NOT exists');
-        //imageList.add(false);
       }
     }
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   isFileExists(LearningMaterialModel item) async {
+    if (kIsWeb) return false;
     bool isImage = false;
     String dir = (await getTemporaryDirectory()).path;
     String path = '$dir/${item.ContentDescription}.png';
     debugPrint(path);
     if (await File(path).exists()) {
-//       debugPrint('exists');
       isImage = true;
     } else {
-//       debugPrint('NOT exists');
       isImage = false;
     }
     return isImage;
@@ -305,6 +306,7 @@ class _LearningMaterialScreenState extends State<PentemindFunActivityScreen>
                 title: model.ContentDescription,
                 filename: model.ContentDescription,
                 module: 'material',
+                isDownload: false,
               ),
             ),
           );
@@ -366,10 +368,14 @@ class _LearningMaterialScreenState extends State<PentemindFunActivityScreen>
   Map<String, bool> imageList = {};
 
   shareFile(LearningMaterialModel model) async {
+    if (kIsWeb) {
+      await Utility.downloadFile(
+          model.WebUrl, '${model.ContentDescription}.png');
+      return;
+    }
     String dir = (await getTemporaryDirectory()).path;
     String path = '$dir/${model.ContentDescription}.png';
     Share.shareXFiles([XFile(path)], text: model.ContentDescription);
-    //Share.shareFiles([path], text: 'Great picture');
   }
 
   getIcon(LearningMaterialModel model, int index) {

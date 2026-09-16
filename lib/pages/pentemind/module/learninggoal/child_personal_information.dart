@@ -4,11 +4,9 @@ import 'package:ekidzee/api/request/pentemind/base_request.dart';
 import 'package:ekidzee/api/request/pentemind/learninggoal/www/SaveWhatWentWellRequest.dart';
 import 'package:ekidzee/helper/LocalConstant.dart';
 import 'package:ekidzee/iface/onClick.dart';
-import 'package:ekidzee/widget/MyWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../api/APIService.dart';
@@ -17,12 +15,8 @@ import '../../../../api/response/pentemind/learninggoals/childinfo/ChildInformat
 import '../../../../constants.dart';
 import '../../../../firebase/anylatics.dart';
 import '../../../../helper/utils.dart';
-import '../../../../utils/theme/colors/light_colors.dart';
+import 'learning_goal_ui.dart';
 
-/// Screen for managing Child's Personal Information (Height, Weight, etc.).
-/// 
-/// Adheres to professional coding standards with modular structure, 
-/// responsive UI, and optimized logic.
 class ChildPersonalinformationScreen extends StatefulWidget {
   const ChildPersonalinformationScreen({super.key});
 
@@ -36,15 +30,14 @@ class _ChildPersonalState extends State<ChildPersonalinformationScreen>
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
 
-  // State Variables
   List<ChildInformationList> childInformationList = [];
   bool isLoading = true;
   late SharedPreferences prefs;
-  
+
   String uid = '';
   String teacherId = '';
-  String userType = '';
   String token = '';
+  String className = '';
   int programId = 0;
 
   @override
@@ -60,7 +53,6 @@ class _ChildPersonalState extends State<ChildPersonalinformationScreen>
     super.dispose();
   }
 
-  /// Entry point to load user info and initial list.
   Future<void> _initializeData() async {
     await _getUserInfo();
   }
@@ -72,31 +64,27 @@ class _ChildPersonalState extends State<ChildPersonalinformationScreen>
     }
   }
 
-  /// Fetches essential user details from persistent storage.
   Future<void> _getUserInfo() async {
     prefs = await SharedPreferences.getInstance();
-    uid = prefs.getString(LocalConstant.KEY_UID) ?? "";
-    teacherId = prefs.getString(LocalConstant.KEY_USER_ID) ?? "";
-    userType = prefs.getString(LocalConstant.KEY_USER_TYPE) ?? "";
-    token = prefs.getString(LocalConstant.KEY_APP_TOKEN) ?? "";
+    uid = prefs.getString(LocalConstant.KEY_UID) ?? '';
+    teacherId = prefs.getString(LocalConstant.KEY_USER_ID) ?? '';
+    token = prefs.getString(LocalConstant.KEY_APP_TOKEN) ?? '';
+    className =
+        prefs.getString(LocalConstant.KEY_CURRENT_PROGRAM_NAME) ?? '';
     programId = prefs.getInt(LocalConstant.KEY_CURRENT_PROGRAM_ID) ?? 0;
 
-    // Load from local cache if available for offline responsiveness
     final String? cachedData = prefs.getString(_getCacheId());
     if (cachedData != null) {
       _loadLocalData(cachedData);
     }
-    
-    // Refresh with fresh data from API
+
     _fetchChildInformation();
   }
 
-  /// Returns unique ID for caching child information based on user.
   String _getCacheId() {
-    return "${uid}_${LocalConstant.MENU_LG_CHILD_INFORMATION}";
+    return '${uid}_${LocalConstant.MENU_LG_CHILD_INFORMATION}';
   }
 
-  /// Processes cached data to populate UI instantly.
   void _loadLocalData(String data) {
     try {
       final response = ChildInformationResponse.fromJson(json.decode(data));
@@ -105,11 +93,10 @@ class _ChildPersonalState extends State<ChildPersonalinformationScreen>
         isLoading = false;
       });
     } catch (e) {
-      debugPrint("Cache parsing error: $e");
+      debugPrint('Cache parsing error: $e');
     }
   }
 
-  /// Fetches updated child information from the server.
   Future<void> _fetchChildInformation() async {
     if (!mounted) return;
     setState(() => isLoading = true);
@@ -124,16 +111,15 @@ class _ChildPersonalState extends State<ChildPersonalinformationScreen>
       final response = await APIService().getChildInformation(request, token);
 
       if (response is ChildInformationResponse) {
-        // Update cache
         prefs.setString(_getCacheId(), jsonEncode(response));
         setState(() {
           childInformationList = response.childInformationList;
         });
       } else {
-        Utility.showMessage(context, "Data not found");
+        Utility.showMessage(context, 'Data not found');
       }
     } catch (e) {
-      debugPrint("API Error: $e");
+      debugPrint('API Error: $e');
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -141,14 +127,18 @@ class _ChildPersonalState extends State<ChildPersonalinformationScreen>
 
   @override
   Widget build(BuildContext context) {
-    FirebaseAnalyticsUtils().sendAnalyticsEvent("LG-Child Information");
+    FirebaseAnalyticsUtils().sendAnalyticsEvent('LG-Child Information');
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
+      backgroundColor: LearningGoalUi.pageBackground,
+      appBar: LearningGoalUi.appBar(
+        title: "Child's Personal Information",
+        subtitle: className.isNotEmpty ? className : null,
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           key: _refreshIndicatorKey,
-          color: kPrimaryLightColor,
+          color: Colors.white,
+          backgroundColor: kPrimaryLightColor,
           onRefresh: _fetchChildInformation,
           child: _buildBody(),
         ),
@@ -156,211 +146,272 @@ class _ChildPersonalState extends State<ChildPersonalinformationScreen>
     );
   }
 
-  /// Modular AppBar construction.
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      centerTitle: false,
-      title: Text(
-        "Child's Personal Information",
-        style: GoogleFonts.roboto(fontSize: 14.0, color: Colors.white),
-      ),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-      backgroundColor: kPrimaryLightColor,
-      elevation: 4,
-    );
-  }
-
-  /// Builds the main content area with responsive checks.
   Widget _buildBody() {
     if (isLoading && childInformationList.isEmpty) {
-      return Center(child: Lottie.asset("assets/json/kidzee_loader.json"));
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.35,
+            child: LearningGoalUi.loading(),
+          ),
+        ],
+      );
     }
 
     if (childInformationList.isEmpty) {
-      return Utility.emptyData(context, "No information available at this moment.");
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+          Utility.emptyData(
+              context, 'No information available at this moment.'),
+        ],
+      );
     }
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Adjust padding for tablets/wide screens
-        final horizontalPadding = constraints.maxWidth > 600 ? 32.0 : 8.0;
-        
-        return ListView.builder(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
-          itemCount: childInformationList.length,
-          itemBuilder: (context, index) {
-            return _buildChildCard(childInformationList[index], index);
-          },
+        final maxWidth = LearningGoalUi.contentMaxWidth(constraints.maxWidth);
+        return LearningGoalUi.centeredContent(
+          maxWidth: maxWidth,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: LearningGoalUi.pagePadding(constraints.maxWidth),
+            itemCount: childInformationList.length,
+            itemBuilder: (context, index) {
+              return _buildChildCard(childInformationList[index], index);
+            },
+          ),
         );
       },
     );
   }
 
-  /// Individual card for each child.
   Widget _buildChildCard(ChildInformationList model, int index) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        children: [
-          _buildCardHeader(model, index),
-          const Divider(height: 1),
-          _buildInformationTable(model, index),
-        ],
-      ),
-    );
-  }
-
-  /// Header section of the child card with edit toggle.
-  Widget _buildCardHeader(ChildInformationList model, int index) {
-    return ListTile(
-      title: Text(
-        model.StudentName,
-        style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: kPrimaryLightColor),
-      ),
-      trailing: IconButton(
-        icon: Icon(
-          model.isEdit ? Icons.check_circle : Icons.edit,
-          color: model.isEdit ? Colors.green : Colors.grey,
-          size: 28,
+    return LearningGoalUi.studentCardShell(
+      header: LearningGoalUi.studentHeader(
+        name: model.StudentName,
+        subtitle: 'Height & weight · academic year',
+        avatar: CircleAvatar(
+          radius: 22,
+          backgroundColor: kPrimaryLightColor.withValues(alpha: 0.1),
+          child: Icon(Icons.person_outline, color: kPrimaryLightColor),
         ),
-        onPressed: () => _toggleEdit(index, model),
+        trailing: Material(
+          color: model.isEdit
+              ? Colors.green.withValues(alpha: 0.12)
+              : kPrimaryLightColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => _toggleEdit(index, model),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    model.isEdit ? Icons.check : Icons.edit_outlined,
+                    size: 18,
+                    color: model.isEdit ? Colors.green : kPrimaryLightColor,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    model.isEdit ? 'Save' : 'Edit',
+                    style: GoogleFonts.roboto(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: model.isEdit ? Colors.green : kPrimaryLightColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth >= 480) {
+              return _buildWideMetrics(model);
+            }
+            return _buildNarrowMetrics(model);
+          },
+        ),
       ),
     );
   }
 
-  /// Toggles editing state and submits if switching from edit to view.
-  Future<void> _toggleEdit(int index, ChildInformationList model) async {
-    if (model.isEdit) {
-      // Switched from edit to save
-      await _submitUpdate(model);
-    }
-    
-    setState(() {
-      model.isEdit = !model.isEdit;
-    });
-  }
-
-  /// Build the data table for height and weight entries.
-  Widget _buildInformationTable(ChildInformationList model, int index) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columnSpacing: 24,
-        columns: const [
-          DataColumn(label: Text("Metric", style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text("Start - AY", style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text("End - AY", style: TextStyle(fontWeight: FontWeight.bold))),
-        ],
-        rows: [
-          _buildDataRow(
-            "Height (cm)",
-            model.StartTermHeight,
-            model.EndTermHeight,
-            (val) => model.StartTermHeight = val,
-            (val) => model.EndTermHeight = val,
-            model.isEdit,
-          ),
-          _buildDataRow(
-            "Weight (kg)",
-            model.StartTermWeight,
-            model.EndTermWeight,
-            (val) => model.StartTermWeight = val,
-            (val) => model.EndTermWeight = val,
-            model.isEdit,
-          ),
-        ],
-      ),
+  Widget _buildWideMetrics(ChildInformationList model) {
+    return Row(
+      children: [
+        Expanded(child: _metricBlock('Height (cm)', model, isHeight: true)),
+        const SizedBox(width: 12),
+        Expanded(child: _metricBlock('Weight (kg)', model, isHeight: false)),
+      ],
     );
   }
 
-  /// Helper to create a single DataRow (view or edit mode).
-  DataRow _buildDataRow(
+  Widget _buildNarrowMetrics(ChildInformationList model) {
+    return Column(
+      children: [
+        _metricBlock('Height (cm)', model, isHeight: true),
+        const SizedBox(height: 10),
+        _metricBlock('Weight (kg)', model, isHeight: false),
+      ],
+    );
+  }
+
+  Widget _metricBlock(
     String label,
-    String startVal,
-    String endVal,
-    Function(String) onStartChange,
-    Function(String) onEndChange,
+    ChildInformationList model, {
+    required bool isHeight,
+  }) {
+    final startVal = isHeight ? model.StartTermHeight : model.StartTermWeight;
+    final endVal = isHeight ? model.EndTermHeight : model.EndTermWeight;
+    final onStart = isHeight
+        ? (String v) => model.StartTermHeight = v
+        : (String v) => model.StartTermWeight = v;
+    final onEnd = isHeight
+        ? (String v) => model.EndTermHeight = v
+        : (String v) => model.EndTermWeight = v;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.roboto(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: kPrimaryLightColor,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _metricRow('Start - AY', startVal, onStart, model.isEdit),
+          const SizedBox(height: 8),
+          _metricRow('End - AY', endVal, onEnd, model.isEdit),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricRow(
+    String termLabel,
+    String value,
+    Function(String) onChanged,
     bool isEdit,
   ) {
-    return DataRow(
-      cells: [
-        DataCell(Text(label)),
-        DataCell(
-          isEdit
-              ? _buildInputField(startVal, onStartChange)
-              : Text(startVal.isEmpty ? "NA" : startVal),
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            termLabel,
+            style: GoogleFonts.roboto(fontSize: 12, color: Colors.black54),
+          ),
         ),
-        DataCell(
-          isEdit
-              ? _buildInputField(endVal, onEndChange)
-              : Text(endVal.isEmpty ? "NA" : endVal),
+        Expanded(
+          flex: 2,
+          child: isEdit
+              ? _buildInputField(value, onChanged)
+              : Text(
+                  value.isEmpty ? 'NA' : value,
+                  style: GoogleFonts.roboto(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
         ),
       ],
     );
   }
 
-  /// Customized input field for the data table.
+  Future<void> _toggleEdit(int index, ChildInformationList model) async {
+    if (model.isEdit) {
+      await _submitUpdate(model);
+    }
+    setState(() {
+      model.isEdit = !model.isEdit;
+    });
+  }
+
   Widget _buildInputField(String initialValue, Function(String) onChanged) {
-    return SizedBox(
-      width: 60,
-      child: TextFormField(
-        initialValue: initialValue,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        style: const TextStyle(fontSize: 13),
-        inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(r"(^\d{0,3}\.?\d{0,2})")),
-        ],
-        decoration: const InputDecoration(
-          isDense: true,
-          contentPadding: EdgeInsets.symmetric(vertical: 8),
-          border: UnderlineInputBorder(),
+    return TextFormField(
+      initialValue: initialValue,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      style: GoogleFonts.roboto(fontSize: 14),
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'(^\d{0,3}\.?\d{0,2})')),
+      ],
+      decoration: InputDecoration(
+        isDense: true,
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
         ),
-        onChanged: (val) {
-          onChanged(val);
-          setState(() {}); // Reflect updates locally
-        },
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: kPrimaryLightColor),
+        ),
       ),
+      onChanged: (val) {
+        onChanged(val);
+        setState(() {});
+      },
     );
   }
 
-  /// Submits the updated height/weight data for a specific student.
   Future<void> _submitUpdate(ChildInformationList model) async {
     Utility.showLoaderDialog(context);
-    
+
     try {
       final List<SaveWhatWentWellModel> data = [
         SaveWhatWentWellModel(
-          RefKey: "Height",
+          RefKey: 'Height',
           RefValue: model.StartTermHeight,
           StudentID: int.parse(model.StudentID),
-          Term: "Term 1",
-          Remarks: "",
+          Term: 'Term 1',
+          Remarks: '',
         ),
         SaveWhatWentWellModel(
-          RefKey: "Height",
+          RefKey: 'Height',
           RefValue: model.EndTermHeight,
           StudentID: int.parse(model.StudentID),
-          Term: "Term 3",
-          Remarks: "",
+          Term: 'Term 3',
+          Remarks: '',
         ),
         SaveWhatWentWellModel(
-          RefKey: "Weight",
+          RefKey: 'Weight',
           RefValue: model.StartTermWeight,
           StudentID: int.parse(model.StudentID),
-          Term: "Term 1",
-          Remarks: "",
+          Term: 'Term 1',
+          Remarks: '',
         ),
         SaveWhatWentWellModel(
-          RefKey: "Weight",
+          RefKey: 'Weight',
           RefValue: model.EndTermWeight,
           StudentID: int.parse(model.StudentID),
-          Term: "Term 3",
-          Remarks: "",
+          Term: 'Term 3',
+          Remarks: '',
         ),
       ];
 
@@ -368,29 +419,34 @@ class _ChildPersonalState extends State<ChildPersonalinformationScreen>
         TeacherId: teacherId,
         UserId: uid,
         ProgramID: programId,
-        InputType: "CHILDINFO",
+        InputType: 'CHILDINFO',
         wwwModel: data,
       );
 
-      final response = await APIService().insertStudentAnecdotal(request, token);
+      final response =
+          await APIService().insertStudentAnecdotal(request, token);
 
       if (response is GenericResponse && response.success == 200) {
-        Utility.showMessage(context, response.response is String ? response.response : "Information updated successfully");
+        Utility.showMessage(
+            context,
+            response.response is String
+                ? response.response
+                : 'Information updated successfully');
       } else {
-        Utility.showMessage(context, "Update failed");
+        Utility.showMessage(context, 'Update failed');
       }
     } catch (e) {
-      debugPrint("Submission error: $e");
-      Utility.showMessage(context, "An error occurred during update");
+      debugPrint('Submission error: $e');
+      Utility.showMessage(context, 'An error occurred during update');
     } finally {
-      Navigator.of(context, rootNavigator: true).pop("dialog");
+      Navigator.of(context, rootNavigator: true).pop('dialog');
     }
   }
 
   @override
   void onClick(int action, value) {
     if (action == Utility.ACTION_IMAGE_UPLOAD_RESPONSE_ERROR) {
-      Navigator.of(context, rootNavigator: true).pop("dialog");
+      Navigator.of(context, rootNavigator: true).pop('dialog');
       Utility.showMessage(context, value.toString());
     }
   }

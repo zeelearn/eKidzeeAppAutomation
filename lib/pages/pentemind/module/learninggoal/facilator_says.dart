@@ -4,11 +4,8 @@ import 'package:ekidzee/api/request/pentemind/base_termrequest.dart';
 import 'package:ekidzee/helper/LocalConstant.dart';
 import 'package:ekidzee/iface/onClick.dart';
 import 'package:ekidzee/pages/pentemind/module/learninggoal/facilatorsays_mind.dart';
-import 'package:ekidzee/widget/MyWidget.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../api/APIService.dart';
@@ -17,7 +14,7 @@ import '../../../../api/response/pentemind/facilatorsays/get_facilator_says.dart
 import '../../../../constants.dart';
 import '../../../../firebase/anylatics.dart';
 import '../../../../helper/utils.dart';
-import '../../../../utils/theme/colors/light_colors.dart';
+import 'learning_goal_ui.dart';
 
 class FacilatorSaysScreen extends StatefulWidget {
   const FacilatorSaysScreen({super.key});
@@ -37,22 +34,15 @@ class _FacilatorSaysState extends State<FacilatorSaysScreen>
   late final prefs;
   String uid = '';
   String teacherId = '';
-  String userType = '';
   String token = '';
-  String term = '';
-  String studentId = '';
   String className = '';
   int programId = 0;
   String _chosenValue = 'Term 1';
-  FacilatorSaysModel? _mModel;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-
     WidgetsBinding.instance.addObserver(this);
-    //getUserInfo();
     loadData();
   }
 
@@ -68,7 +58,6 @@ class _FacilatorSaysState extends State<FacilatorSaysScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-//     debugPrint('_AnnouncementListState didChangeAppLifecycleState $state ');
     if (state == AppLifecycleState.resumed) {
       getFacilatorSaysList();
     }
@@ -78,7 +67,6 @@ class _FacilatorSaysState extends State<FacilatorSaysScreen>
     prefs = await SharedPreferences.getInstance();
     uid = prefs.getString(LocalConstant.KEY_UID) as String;
     teacherId = prefs.getString(LocalConstant.KEY_USER_ID) as String;
-    userType = prefs.getString(LocalConstant.KEY_USER_TYPE) as String;
     token = prefs.getString(LocalConstant.KEY_APP_TOKEN) as String;
     className =
         prefs.getString(LocalConstant.KEY_CURRENT_PROGRAM_NAME) as String;
@@ -101,7 +89,6 @@ class _FacilatorSaysState extends State<FacilatorSaysScreen>
         json.decode(data!),
       );
       facilatorSaysList.addAll(response.data);
-      setState(() {});
       setState(() {});
       isLoad = true;
     } catch (e) {
@@ -126,24 +113,17 @@ class _FacilatorSaysState extends State<FacilatorSaysScreen>
         Program_ID: programId, userId: uid, term: _chosenValue);
     APIService apiService = APIService();
     apiService.getFacilatorSaysList(request, token).then((value) {
-      debugPrint(value.toString());
       isLoading = false;
       if (value != null) {
-//         debugPrint('value is not null $value');
-        if (value == null) {
-          Utility.showMessage(context, 'data not found');
-        } else if (value is FacilatorSaysResponse) {
-//           debugPrint('in child info');
+        if (value is FacilatorSaysResponse) {
           FacilatorSaysResponse response = value;
           String json = jsonEncode(response);
           savechildAdvancementSummery(json);
           facilatorSaysList.addAll(response.data);
-          setState(() {});
         } else {
           Utility.showMessage(context, 'data not found');
         }
       }
-      //Navigator.of(context).pop();
       setState(() {});
     });
   }
@@ -152,309 +132,173 @@ class _FacilatorSaysState extends State<FacilatorSaysScreen>
   Widget build(BuildContext context) {
     FirebaseAnalyticsUtils().sendAnalyticsEvent('Facilitator Says');
     return Scaffold(
-        appBar: AppBar(
-          centerTitle: false,
-          title: Text(
-            'Facilitator Says',
-            style: GoogleFonts.roboto(
-              fontSize: 14.0,
-              color: Colors.white,
-              fontWeight: FontWeight.normal,
-              height: 1,
-            ),
-          ),
-          // You can add title here
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          backgroundColor: kPrimaryLightColor,
-          //You can make this transparent
-          elevation: 5,
-          //No shadow
-          shadowColor: LightColors.kLightGray1,
-        ),
-        extendBodyBehindAppBar: true,
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: RefreshIndicator(
-            key: _refreshIndicatorKey,
-            color: Colors.white,
-            backgroundColor: kPrimaryLightColor,
-            strokeWidth: 4.0,
-            onRefresh: () async {
-              // Replace this delay with the code to be executed during refresh
-              // and return a Future when code finishs execution.
-              getFacilatorSaysList();
-              return Future<void>.delayed(const Duration(seconds: 3));
-            },
-            // Pull from top to show refresh indicator.
-            child: getChildList(),
-          ),
-        ));
-  }
-
-  getChildList() {
-    if (isLoading) {
-      return Center(
-        child: Lottie.asset('assets/json/kidzee_loader.json'),
-      );
-    } else if (facilatorSaysList.isEmpty) {
-      return Utility.emptyData(context,
-          "Facilator Says List are  not available at this moment please check later");
-    } else {
-      return Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 20),
-            child: DropdownButton<String>(
-              focusColor: Colors.white,
+      backgroundColor: LearningGoalUi.pageBackground,
+      appBar: LearningGoalUi.appBar(
+        title: 'Facilitator Says',
+        subtitle: className.isNotEmpty ? className : null,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            LearningGoalUi.termSelector(
               value: _chosenValue,
-              //elevation: 5,
-              style: const TextStyle(color: Colors.white),
-              iconEnabledColor: Colors.black,
-              items: <String>['Term 1', 'Term 2', 'Term 3']
-                  .map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(
-                    value,
-                    style: const TextStyle(color: Colors.black),
-                  ),
-                );
-              }).toList(),
-              hint: const Text(
-                "Select Term",
-                style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500),
-              ),
+              items: const ['Term 1', 'Term 2', 'Term 3'],
               onChanged: (value) {
-                _chosenValue = value!;
+                if (value == null) return;
+                setState(() => _chosenValue = value);
                 getFacilatorSaysList();
               },
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 50),
-            child: ListView.builder(
-              itemCount: facilatorSaysList.length,
-              shrinkWrap: true,
-              itemBuilder: (context, index) {
-                return generateListRow(facilatorSaysList[index], index);
-              },
+            Expanded(
+              child: RefreshIndicator(
+                key: _refreshIndicatorKey,
+                color: Colors.white,
+                backgroundColor: kPrimaryLightColor,
+                strokeWidth: 3.0,
+                onRefresh: () async {
+                  getFacilatorSaysList();
+                  return Future<void>.delayed(const Duration(seconds: 1));
+                },
+                child: getChildList(),
+              ),
             ),
-          )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget getChildList() {
+    if (isLoading) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.35,
+            child: LearningGoalUi.loading(),
+          ),
         ],
       );
     }
+
+    if (facilatorSaysList.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: MediaQuery.of(context).size.height * 0.12),
+          Utility.emptyData(
+            context,
+            'Facilitator Says list is not available at this moment. Please check later.',
+          ),
+        ],
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = LearningGoalUi.contentMaxWidth(constraints.maxWidth);
+        return LearningGoalUi.centeredContent(
+          maxWidth: maxWidth,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: LearningGoalUi.pagePadding(constraints.maxWidth),
+            itemCount: facilatorSaysList.length,
+            itemBuilder: (context, index) {
+              return generateListRow(
+                  facilatorSaysList[index], constraints.maxWidth);
+            },
+          ),
+        );
+      },
+    );
   }
 
-  IconData editIcon = Icons.edit;
-  generateListRow(FacilatorSaysModel model, int index) {
-    return Container(
-        color: Colors.white,
-        child: Card(
-            color: Colors.white.withOpacity(0.8),
-            margin: const EdgeInsets.all(8),
-            child: Column(
-              children: [
-                Container(
-                  color: LightColors.kLightGrayM,
-                  child: ListTile(
-                    leading: SizedBox(
-                      width: 40,
-                      child: CircleAvatar(
-                        radius: 56,
-                        backgroundColor: LightColors.kLightGray,
-                        child: Padding(
-                          padding: const EdgeInsets.all(2), // Border radius
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10.0),
-                            child: Image.asset(
-                              'assets/icons/pentemind/${model.ImgName}.png',
-                              height: 30.0,
-                              width: 30.0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    title: MyWidget().richText(
-                        model.Mind,
-                        LightColors
-                            .textHeaderStyle), /*DataTable(
-                        // Datatable widget that have the property columns and rows.
-                          columns: getHeaders(model),
-                          rows: getRows(model),
-                      ),*/
-                  ),
-                ),
-                GridView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: kIsWeb ? 3 : 2,
-                    mainAxisSpacing: 0,
-                    crossAxisSpacing: 1,
-                    // width / height: fixed for *all* items
-                    childAspectRatio: kIsWeb ? 4 : 2,
-                  ),
-                  itemCount: model.Observation.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    return getTermCard(model, model.Observation[index]);
-                  },
-                )
-              ],
-            )));
+  Widget generateListRow(FacilatorSaysModel model, double width) {
+    return LearningGoalUi.studentCardShell(
+      header: LearningGoalUi.studentHeader(
+        name: model.Mind,
+        subtitle: '${model.Observation.length} observations · $_chosenValue',
+        avatar: CircleAvatar(
+          radius: 22,
+          backgroundColor: kPrimaryLightColor.withValues(alpha: 0.1),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: Image.asset(
+              'assets/icons/pentemind/${model.ImgName}.png',
+              height: 36,
+              width: 36,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.psychology_outlined,
+                color: kPrimaryLightColor,
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
+        child: GridView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: LearningGoalUi.gridCrossAxisCount(width),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: LearningGoalUi.gridChildAspectRatio(width),
+          ),
+          itemCount: model.Observation.length,
+          itemBuilder: (BuildContext context, int index) {
+            return getTermCard(model, model.Observation[index]);
+          },
+        ),
+      ),
+    );
   }
 
-  getTermCard(
+  Widget getTermCard(
       FacilatorSaysModel facilatorSaysModel, FacilatorObservation model) {
-    return GestureDetector(
+    final remarksPreview = model.Remarks.isNotEmpty
+        ? (model.Remarks.length > 40
+            ? '${model.Remarks.substring(0, 40)}…'
+            : model.Remarks)
+        : 'Tap to add observations';
+
+    return LearningGoalUi.gridTile(
+      title: model.RefKey,
+      preview: remarksPreview,
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => FacilatorSaysMindFeedbackScreen(
-                    term: _chosenValue,
-                    facilatorSaysModel: facilatorSaysModel,
-                    Observation: facilatorSaysModel.Observation,
-                  )),
-        ).then((value) {
-          //do something after resuming screen
-          getFacilatorSaysList();
-        });
-      },
-      child: Card(
-        elevation: 8,
-        shadowColor: LightColors.kAbsent,
-        child: ListTile(
-          contentPadding: const EdgeInsets.all(5),
-          trailing: Container(
-            width: 20.0, // this width forces the container to be a circle
-            height: 24.0,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [
-                LightColors.kLightBlue,
-                LightColors.kLightBlue,
-                LightColors.kLightBlue
-              ]),
-              borderRadius: BorderRadius.circular(10),
-            ), // this height forces the container to be a circle
-            child: Text(
-              model.RefCount.toString(),
-              style: LightColors.textHeaderStyle,
-              textAlign: TextAlign.center,
+            builder: (context) => FacilatorSaysMindFeedbackScreen(
+              term: _chosenValue,
+              facilatorSaysModel: facilatorSaysModel,
+              Observation: facilatorSaysModel.Observation,
             ),
           ),
-          title: MyWidget().richText(
-              model.RefKey,
-              GoogleFonts.robotoSlab(
-                fontSize: 16.0,
-                color: kPrimaryLightColor,
-                fontWeight: FontWeight.normal,
-                height: 1,
-              )),
-          subtitle: Column(
-            children: [
-              MyWidget().richText(
-                  model.Remarks.isNotEmpty
-                      ? model.Remarks.length > 40
-                          ? '${model.Remarks.substring(0, 40)}..'
-                          : model.Remarks
-                      : '',
-                  GoogleFonts.roboto(
-                    fontSize: 12.0,
-                    color: Colors.black54,
-                    fontWeight: FontWeight.normal,
-                    height: 1,
-                  )),
-              const SizedBox(
-                height: 10,
-              )
-            ],
+        ).then((_) => getFacilatorSaysList());
+      },
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: kPrimaryLightColor.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          model.RefCount.toString(),
+          style: GoogleFonts.roboto(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: kPrimaryLightColor,
           ),
         ),
       ),
     );
   }
 
-  List<DataColumn> getHeaders(FacilatorSaysModel models) {
-    List<DataColumn> list = [];
-    for (int index = 0; index < models.Observation.length; index++) {
-      list.add(
-        DataColumn(
-          label: Text(
-            models.Observation[index].RefKey,
-            style: LightColors.textSmallStyle,
-          ),
-        ),
-      );
-    }
-    return list;
-  }
-
-  List<DataRow> getRows(FacilatorSaysModel models) {
-    List<DataRow> list = [];
-    List<DataCell> cell = [];
-    for (int index = 0; index < models.Observation.length; index++) {
-      cell.add(
-        DataCell(Text(
-          models.Observation[index].Remarks,
-          style: LightColors.textSmallStyle,
-        )),
-      );
-    }
-    list.add(DataRow(cells: cell));
-    return list;
-  }
-
-  setSelection(FacilatorSaysModel model) {
-    _mModel = model;
-  }
-
-  updateStudentInfo() {
-    /*Utility.showLoaderDialog(context);
-    List<SaveWhatWentWellModel> list = [];
-    list.add(SaveWhatWentWellModel(RefKey: 'Height',RefValue: _mModel!.StartTermWeight,StudentID: int.parse(_mModel!.StudentID),Term: 'Term 1'));
-    list.add(SaveWhatWentWellModel(RefKey: 'Height',RefValue: _mModel!.EndTermHeight,StudentID: int.parse(_mModel!.StudentID),Term: 'Term 3'));
-    list.add(SaveWhatWentWellModel(RefKey: 'Weight',RefValue: _mModel!.StartTermWeight,StudentID: int.parse(_mModel!.StudentID),Term: 'Term 1'));
-    list.add(SaveWhatWentWellModel(RefKey: 'Weight',RefValue: _mModel!.EndTermWeight,StudentID: int.parse(_mModel!.StudentID),Term: 'Term 3'));
-    SaveWhatWentWellRequest request = SaveWhatWentWellRequest(
-        TeacherId: teacherId,
-        UserId: uid,
-        ProgramID: programId,
-        InputType: 'CHILDINFO',
-        wwwModel: list);
-
-    APIService apiService = APIService();
-    apiService.insertStudentAnecdotal(request, token).then((value) {
-      debugPrint(value.toString());
-      isLoading = false;
-      if (value != null) {
-        if (value == null) {
-          Utility.showMessage(context, 'data not found');
-        } else if (value is GenericResponse) {
-          GenericResponse response = value;
-          if (response != null) {
-            if (response.success == 200) {
-              Utility.showMessage(context, response.response.toString());
-            }
-            //getChildInfomrmationList();
-          }
-        } else {
-          Utility.showMessage(context, 'data not found');
-        }
-      }
-      Navigator.of(context, rootNavigator: true).pop('dialog');
-    });*/
-  }
-
   @override
   void onClick(int action, value) {
-//     debugPrint('onclick $action $value');
     if (action == Utility.ACTION_IMAGE_UPLOAD_RESPONSE_ERROR) {
       Navigator.of(context, rootNavigator: true).pop('dialog');
       Utility.showMessage(context, value.toString());

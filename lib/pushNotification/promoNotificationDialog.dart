@@ -42,17 +42,16 @@ class PromoNotification {
                 const EdgeInsets.symmetric(horizontal: 10.0, vertical: 5.0),
             content: SingleChildScrollView(
               child: InkWell(
-                onTap: () {
-                  if (extraData != null && extraData.toString().isNotEmpty) {
-                    Navigator.pop(context);
-                    Navigator.push(
+                  onTap: () async {
+                    if (extraData != null && extraData.toString().isNotEmpty) {
+                      Navigator.pop(context);
+                      await openCelebrationWebsite(
                         ctx,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              goToMYWebsite(title: title, url: extraData),
-                        ));
-                  }
-                },
+                        title: title,
+                        url: extraData.toString(),
+                      );
+                    }
+                  },
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -75,7 +74,7 @@ class PromoNotification {
       String title,
       String body,
       String bigImage,
-      dynamic extraData,
+      dynamic actionurl,
       String displayName,
       String assetImage) async {
     BuildContext context = MyApp.navigatorKey.currentContext!;
@@ -95,15 +94,14 @@ class PromoNotification {
               width: kIsWeb ? 400 : 500,
               child: SingleChildScrollView(
                 child: InkWell(
-                  onTap: () {
-                    if (extraData != null && extraData.toString().isNotEmpty) {
+                  onTap: () async {
+                    if (actionurl != null && actionurl.toString().isNotEmpty) {
                       Navigator.pop(context);
-                      Navigator.push(
-                          ctx,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                goToMYWebsite(title: title, url: extraData),
-                          ));
+                      await openCelebrationWebsite(
+                        ctx,
+                        title: title,
+                        url: actionurl.toString(),
+                      );
                     }
                   },
                   child: RepaintBoundary(

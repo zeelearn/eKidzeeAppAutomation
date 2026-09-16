@@ -203,6 +203,7 @@ class LearningResource extends StatelessWidget {
             title: model.ContentDescription,
             filename: model.ContentDescription,
             module: 'material',
+            isDownload: false,
           ));
     } else {
       Get.to(() => goToImageViewer(imageUrl: model.WebUrl));

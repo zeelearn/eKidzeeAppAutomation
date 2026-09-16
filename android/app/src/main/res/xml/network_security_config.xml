@@ -1,92 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--suppress ALL -->
+<!--
+  Cleartext (HTTP) is denied by default (application usesCleartextTraffic=false).
+  Only listed hosts may use HTTP. Prefer HTTPS for all new endpoints.
+-->
 <network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Legacy KLT media server (HTTP only) -->
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">api.dyntube.com</domain>
+        <domain includeSubdomains="true">103.241.146.154</domain>
     </domain-config>
 
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">api.dyntube.com</domain>
+        <domain includeSubdomains="true">cdn.dyntube.net</domain>
+    </domain-config>
 
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">amazonaws.com</domain>
-    </domain-config>
-
-
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">conference.zeelearn.in</domain>
-    </domain-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">tawk.to</domain>
-    </domain-config>
-
-        <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">googleapis.com</domain>
+        <domain includeSubdomains="true">pentemind-app.s3-website.ap-south-1.amazonaws.com</domain>
     </domain-config>
 
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">zeelearn.com</domain>
+        <domain includeSubdomains="true">api.zeelearn.com</domain>
+        <domain includeSubdomains="true">kubapi.zeelearn.com</domain>
+        <domain includeSubdomains="true">cdn.zeelearn.com</domain>
+        <domain includeSubdomains="true">pdfapi.zeelearn.com</domain>
+        <domain includeSubdomains="true">zllsaathi.zeelearn.com</domain>
+        <domain includeSubdomains="true">conference.zeelearn.in</domain>
     </domain-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">api.zoom.us</domain>
-    </domain-config>
-    
+
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">ekidzee.com</domain>
-    </domain-config>
-
-
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">api.zeelearn.com</domain>
-    </domain-config>
-    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">www.ekidzee.com</domain>
+        <domain includeSubdomains="true">app.ekidzee.com</domain>
+        <domain includeSubdomains="true">api.ekidzee.com</domain>
         <domain includeSubdomains="true">ecampus.ekidzee.com</domain>
     </domain-config>
 
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">ecampus.kidzeeplus.com</domain>
-    </domain-config>
-
-
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">www.ekidzee.com</domain>
-    </domain-config><domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">api.ekidzee.com</domain>
-    </domain-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">app.kidzeeplus.com</domain>
-    </domain-config>
-    <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">kidzee.com</domain>
-    </domain-config>
-
-   
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">facebook.com</domain><!-- for *HttpServer -->
-    </domain-config>
-
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">twitter.com</domain><!-- for *HttpServer -->
-    </domain-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">pentemind.com</domain><!-- for *HttpServer -->
-    </domain-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">stagingapipentemindcom.eba-2z8hhxmy.us-east-1.elasticbeanstalk.com</domain><!-- for *HttpServer -->
-    </domain-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">elasticbeanstalk.com</domain><!-- for *HttpServer -->
-    </domain-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">pentemind-app.s3-website.ap-south-1.amazonaws.com</domain><!-- for *HttpServer -->
-    </domain-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">web.app</domain><!-- for *HttpServer -->
-    </domain-config>
-
-    <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">printpentemind.kidzee.com</domain>
+        <domain includeSubdomains="true">ecampus.kidzeeplus.com</domain>
+        <domain includeSubdomains="true">app.kidzeeplus.com</domain>
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />
         </trust-anchors>
+    </domain-config>
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">pentemind.com</domain>
+        <domain includeSubdomains="true">content.pentemind.com</domain>
+        <domain includeSubdomains="true">print.pentemind.com</domain>
+    </domain-config>
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">googleapis.com</domain>
+        <domain includeSubdomains="true">firebaseio.com</domain>
+        <domain includeSubdomains="true">appspot.com</domain>
+    </domain-config>
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">vimeo.com</domain>
+        <domain includeSubdomains="true">player.vimeo.com</domain>
+    </domain-config>
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">tawk.to</domain>
+        <domain includeSubdomains="true">api.zoom.us</domain>
+        <domain includeSubdomains="true">facebook.com</domain>
+        <domain includeSubdomains="true">twitter.com</domain>
+        <domain includeSubdomains="true">web.app</domain>
+        <domain includeSubdomains="true">elasticbeanstalk.com</domain>
+        <domain includeSubdomains="true">stagingapi1.ap-south-1.elasticbeanstalk.com</domain>
+        <domain includeSubdomains="true">stagingapipentemindcom.eba-2z8hhxmy.us-east-1.elasticbeanstalk.com</domain>
+        <domain includeSubdomains="true">cdn-proxy-umber.vercel.app</domain>
     </domain-config>
 </network-security-config>

@@ -35,6 +35,7 @@ import '../pages/k12/core/utils.dart';
 import '../pages/notification/NotificationService.dart';
 import '../utils/theme/colors/light_colors.dart';
 import '../widget/image_viewer.dart';
+import 'KidzeePref.dart';
 import 'LightColor.dart';
 import 'LocalConstant.dart';
 
@@ -481,12 +482,126 @@ class Utility {
               );
   }
 
+  static String resolveDynamicUserPlaceholders(
+    String rawUrl, {
+    required String userId,
+    required String uid,
+    required String displayName,
+    required String userName,
+  }) {
+    if (rawUrl.trim().isEmpty) {
+      return rawUrl;
+    }
+
+    final normalizedUserId = userId.trim();
+    final normalizedUid = uid.trim();
+    final normalizedDisplayName = displayName.trim();
+    final normalizedUserName = userName.trim();
+
+    final replacements = {
+      'userid': Uri.encodeComponent(normalizedUserId),
+      'uid': Uri.encodeComponent(normalizedUid),
+      'displayname': Uri.encodeComponent(normalizedDisplayName),
+      'username': Uri.encodeComponent(normalizedUserName),
+    };
+
+    return rawUrl.replaceAllMapped(
+      RegExp(r'<\s*(userid|uid|displayname|username)\s*>',
+          caseSensitive: false),
+      (match) {
+        final key = (match.group(1) ?? '').toLowerCase();
+        return replacements[key] ?? match.group(0)!;
+      },
+    );
+  }
+
+  /// Resolves `<uid>`, `<userid>`, `<displayname>`, `<username>` using
+  /// the current logged-in session (login cache + SharedPreferences).
+  static Future<String> resolveUserPlaceholdersFromSession(
+      String rawUrl) async {
+    if (rawUrl.trim().isEmpty) {
+      return rawUrl;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final loginData = await KidzeePref().getLoginResponse();
+
+      final userId = (loginData?.userId ??
+              prefs.getString(LocalConstant.KEY_USER_ID) ??
+              '')
+          .trim();
+      final uid =
+          (loginData?.uid ?? prefs.getString(LocalConstant.KEY_UID) ?? '')
+              .trim();
+      final displayName = (loginData?.displayName ??
+              prefs.getString(LocalConstant.KEY_DISPLAY_NAME) ??
+              '')
+          .trim();
+      final userName = (loginData?.userName ??
+              prefs.getString(LocalConstant.KEY_USER_NAME) ??
+              '')
+          .trim();
+
+      return resolveDynamicUserPlaceholders(
+        rawUrl,
+        userId: userId,
+        uid: uid,
+        displayName: displayName,
+        userName: userName,
+      );
+    } catch (_) {
+      return rawUrl;
+    }
+  }
+
+  /// Resolves dynamic user placeholders across common notification payload keys.
+  static Future<Map<String, String?>> resolveNotificationPayloadPlaceholders(
+    Map<String, String?>? payload,
+  ) async {
+    if (payload == null || payload.isEmpty) {
+      return payload ?? <String, String?>{};
+    }
+
+    final resolved = Map<String, String?>.from(payload);
+    const keysToResolve = {
+      'url',
+      'actionUrl',
+      'webViewLink',
+      'id',
+      'imageurl',
+      'bigimage',
+    };
+
+    for (final key in keysToResolve) {
+      final value = resolved[key];
+      if (value != null && value.contains('<')) {
+        resolved[key] = await resolveUserPlaceholdersFromSession(value);
+      }
+    }
+    return resolved;
+  }
+
   static Future<void> launchURL(url) async {
-    debugPrint(url);
-    if (await canLaunch(url)) {
-      await launch(url);
+    final resolvedUrl = url is Uri
+        ? Utility.resolveDynamicUserPlaceholders(
+            url.toString(),
+            userId: '',
+            uid: '',
+            displayName: '',
+            userName: '',
+          )
+        : Utility.resolveDynamicUserPlaceholders(
+            url.toString(),
+            userId: '',
+            uid: '',
+            displayName: '',
+            userName: '',
+          );
+    debugPrint(resolvedUrl);
+    if (await canLaunch(resolvedUrl)) {
+      await launch(resolvedUrl);
     } else {
-      throw 'Could not launch $url';
+      throw 'Could not launch $resolvedUrl';
     }
   }
 
@@ -1086,7 +1201,7 @@ class Utility {
   static void showAlertDialog(BuildContext context, String message) {
     showDialog(
       barrierDismissible: false,
-      barrierColor: Colors.black12.withOpacity(0.3),
+      barrierColor: Colors.black12.withValues(alpha: 0.3),
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -1118,7 +1233,7 @@ class Utility {
       BuildContext context, String message, Function() onTap) {
     showDialog(
       barrierDismissible: false,
-      barrierColor: Colors.black12.withOpacity(0.3),
+      barrierColor: Colors.black12.withValues(alpha: 0.3),
       context: context,
       builder: (BuildContext context) {
         return PopScope(
@@ -1746,37 +1861,37 @@ class Utility {
     return directory.path;
   }
 
-  static var httpClient = HttpClient();
+  static HttpClient? _httpClient;
+  static HttpClient get httpClient => _httpClient ??= HttpClient();
 
   static Future<dynamic> downloadFile(String url, String filename) async {
     if (kIsWeb) {
-      launchUrl(Uri.parse(url));
-      // downloadFileFromUrl(url, filename);
-    } else {
-      String dir = (await getTemporaryDirectory()).path;
-      debugPrint(dir.toString());
-      File file = File('$dir/$filename');
-      debugPrint(file.path.toString());
-      try {
-//         debugPrint('in Download file ${Uri.parse(url)} $filename');
-        var request = await httpClient.getUrl(Uri.parse(url));
-        var response = await request.close();
-        var bytes = await consolidateHttpClientResponseBytes(response);
-        await file.writeAsBytes(bytes);
-//         debugPrint('in Download file completed...');
-        return file;
-      } catch (e) {
-        debugPrint(e.toString());
-      }
+      await launchUrl(Uri.parse(url), mode: LaunchMode.platformDefault);
+      return;
     }
-//     debugPrint('in Download file completed...');
+    String dir = (await getTemporaryDirectory()).path;
+    debugPrint(dir.toString());
+    File file = File('$dir/$filename');
+    debugPrint(file.path.toString());
+    try {
+      var request = await httpClient.getUrl(Uri.parse(url));
+      var response = await request.close();
+      var bytes = await consolidateHttpClientResponseBytes(response);
+      await file.writeAsBytes(bytes);
+      return file;
+    } catch (e) {
+      debugPrint(e.toString());
+    }
   }
 
   static Future<dynamic> downloadFileIOS(String url, String filename) async {
-    // debugPrint('Download file url is - $url');
+    if (kIsWeb) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.platformDefault);
+      return;
+    }
     Directory directory;
 
-    if (Platform.isAndroid) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
       directory = Directory('/storage/emulated/0/Download');
     } else {
       directory = await getApplicationDocumentsDirectory();
@@ -1786,33 +1901,30 @@ class Utility {
     File file = File('$dir/$filename');
     debugPrint(file.path.toString());
     try {
-//       debugPrint('in Download file ${Uri.parse(url)} $filename');
       var request = await httpClient.getUrl(Uri.parse(url));
       var response = await request.close();
       var bytes = await consolidateHttpClientResponseBytes(response);
       await file.writeAsBytes(bytes);
-//       debugPrint('in Download file completed...');
       return file;
     } catch (e) {
       debugPrint(e.toString());
     }
-//     debugPrint('in Download file completed...');
   }
 
   static Future<dynamic> downloadImage(String url, String filename) async {
+    if (kIsWeb) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.platformDefault);
+      return;
+    }
     await Future.delayed(const Duration(seconds: 1));
-    String? dir = (await getExternalStorageDirectory())?.path;
-    //debugPrint(dir.toString());
     File file = File('/storage/emulated/0/Download/$filename');
 
     debugPrint(file.path.toString());
     try {
-//       debugPrint('in Download file ${Uri.parse(url)} $filename');
       var request = await httpClient.getUrl(Uri.parse(url));
       var response = await request.close();
       var bytes = await consolidateHttpClientResponseBytes(response);
       await file.writeAsBytes(bytes);
-//       debugPrint('in Download file completed...');
       NotificationService notificationService = NotificationService();
       notificationService.showNotification(12, 'Download Success',
           'File successfully download', 'File successfully download');
@@ -1820,12 +1932,14 @@ class Utility {
     } catch (e) {
       debugPrint(e.toString());
     }
-//     debugPrint('in Download file completed...');
     return false;
   }
 
   static Future<dynamic> downloadContent(String url, String filename) async {
-    //String dir = (await getTemporaryDirectory()).path;
+    if (kIsWeb) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.platformDefault);
+      return;
+    }
     File file = File(filename);
     debugPrint(filename);
     try {
@@ -1835,10 +1949,8 @@ class Utility {
       await file.writeAsBytes(bytes);
       return file;
     } catch (e) {
-//       debugPrint('error ');
       debugPrint(e.toString());
     }
-//     debugPrint('in Download file completed...');
   }
 
   static Future<void> viewimage(BuildContext context, String imageUrl) async {
@@ -1851,7 +1963,7 @@ class Utility {
   static Future<void> requestDownload(String url, String name) async {
     //final dir = await getApplicationDocumentsDirectory();
     //final dir = await getExternalStorageDirectory();
-    final dir = Platform.isAndroid
+    final dir = defaultTargetPlatform == TargetPlatform.android
         ? await getExternalStorageDirectory()
         : await getApplicationDocumentsDirectory();
     //From path_provider package

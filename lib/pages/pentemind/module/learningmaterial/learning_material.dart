@@ -701,6 +701,7 @@ class MaterialRow extends StatelessWidget {
             title: model.ContentDescription,
             filename: model.ContentDescription,
             module: 'material',
+            isDownload: false,
           ));
     } else if (_isImage(model.MediaType, model.WebUrl)) {
       Get.to(() => goToImageViewer(imageUrl: effectivePath));

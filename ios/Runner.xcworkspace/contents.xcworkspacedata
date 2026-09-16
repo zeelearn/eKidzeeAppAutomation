@@ -2,7 +2,7 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "absolute:/Users/H-LPW0RH43JX/Development/Documents/kidzeeOctave/Generic iOS  6.0.0/Unity-iPhone.xcodeproj">
+      location = "absolute:/Users/H-LPW0RH43JX/Development/Flutter/Kidzee/Generic iOS 7.0.0/Unity-iPhone.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:Runner.xcodeproj">

@@ -2155,24 +2155,28 @@ class APIService {
       GetCulminationRequest requestModel, String token) async {
     try {
       await init();
-      debugPrint(Uri.parse(pentemind_url + LocalStrings.API_GET_CULMINATIONS));
-      debugPrint(requestModel.toJson());
+      print('Request body ${requestModel.toJson()}');
+      print(Uri.parse(pentemind_url + LocalStrings.API_GET_CULMINATIONS));
+      print(requestModel.toJson());
+      print('Request body ${requestModel.toJson()}');
+      print('Header ${getHeader(token)}');
+
       final response = await http.post(
           Uri.parse(pentemind_url + LocalStrings.API_GET_CULMINATIONS),
           headers: getHeader(token),
           body: requestModel.toJson());
-      debugPrint(response.body.toString());
+      print(response.body.toString());
       if (response.statusCode == 200) {
-        debugPrint(response.body);
+        print('Response body ${response.body}');
         return CulminationResponse.fromJson(
           json.decode(response.body) as Map<String, dynamic>,
         );
       } else {
-//         debugPrint('statusCode null');
+        print('statusCode null');
         return null;
       }
     } catch (e) {
-      debugPrint(e.toString());
+      print(e.toString());
       e.toString();
     }
   }

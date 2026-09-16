@@ -251,8 +251,34 @@ void identifyNotification(RemoteMessage message, [WidgetRef? ref]) async {
   }
 }
 
+Future<String> _resolveNotificationUrl(RemoteMessage message) async {
+  final rawUrl = message.data.containsKey('url')
+      ? (message.data['url'] ?? '').toString()
+      : (message.data.containsKey('webViewLink')
+          ? (message.data['webViewLink'] ?? '').toString()
+          : '');
+
+  if (rawUrl.isEmpty) {
+    return rawUrl;
+  }
+
+  return Utility.resolveUserPlaceholdersFromSession(rawUrl);
+}
+
 Future<void> showNotification(RemoteMessage message, WidgetRef? ref) async {
   String cdate = DateFormat("yyyy-MM-dd hh:mm a").format(DateTime.now());
+  final resolvedUrl = await _resolveNotificationUrl(message);
+  final resolvedId = await Utility.resolveUserPlaceholdersFromSession(
+    (message.data['id'] ?? '').toString(),
+  );
+  final resolvedActionUrl = await Utility.resolveUserPlaceholdersFromSession(
+    (message.data['actionUrl'] ?? '').toString(),
+  );
+  final resolvedWebViewLink =
+      await Utility.resolveUserPlaceholdersFromSession(
+    (message.data['webViewLink'] ?? '').toString(),
+  );
+
   if (!kIsWeb) {
     DBHelper helper = DBHelper();
     Map<String, String> data = {};
@@ -272,11 +298,7 @@ Future<void> showNotification(RemoteMessage message, WidgetRef? ref) async {
             ? message.data['type'] as String
             : '');
     data.putIfAbsent('date', () => cdate);
-    data.putIfAbsent(
-        'imageurl',
-        () => message.data.containsKey('url')
-            ? message.data['url'] as String
-            : '');
+    data.putIfAbsent('imageurl', () => resolvedUrl);
     data.putIfAbsent(
         'logoUrl',
         () => message.data.containsKey('logo')
@@ -290,10 +312,10 @@ Future<void> showNotification(RemoteMessage message, WidgetRef? ref) async {
     data.putIfAbsent(
         'webViewLink',
         () => message.data['type'] == 'td' || message.data['type'] == 'chat'
-            ? message.data['id'] as String
-            : message.data.containsKey('url')
-                ? message.data['url'] as String
-                : '');
+            ? resolvedId
+            : (resolvedWebViewLink.isNotEmpty
+                ? resolvedWebViewLink
+                : resolvedUrl));
     helper.insert(LocalConstant.TABLE_NOTIFICATION, data);
   }
   var count = (int.parse(
@@ -318,6 +340,36 @@ Future<void> showNotification(RemoteMessage message, WidgetRef? ref) async {
     );
   } else {
     NotificationService notificationService = NotificationService();
+    // Pass pre-resolved url/id/actionUrl so notification tap payload has real IDs.
+    final resolvedData = Map<String, dynamic>.from(message.data);
+    if (resolvedUrl.isNotEmpty) {
+      resolvedData['url'] = resolvedUrl;
+    }
+    if (resolvedId.isNotEmpty) {
+      resolvedData['id'] = resolvedId;
+    }
+    if (resolvedActionUrl.isNotEmpty) {
+      resolvedData['actionUrl'] = resolvedActionUrl;
+    }
+    if (resolvedWebViewLink.isNotEmpty) {
+      resolvedData['webViewLink'] = resolvedWebViewLink;
+    }
+    final resolvedMessage = RemoteMessage(
+      senderId: message.senderId,
+      category: message.category,
+      collapseKey: message.collapseKey,
+      contentAvailable: message.contentAvailable,
+      data: resolvedData.map((k, v) => MapEntry(k, v?.toString() ?? '')),
+      from: message.from,
+      messageId: message.messageId,
+      messageType: message.messageType,
+      mutableContent: message.mutableContent,
+      notification: message.notification,
+      sentTime: message.sentTime,
+      threadId: message.threadId,
+      ttl: message.ttl,
+    );
+
     if (message.data.containsKey('bigimage') &&
         (message.data['bigimage'] != null &&
             message.data['bigimage'].toString().isNotEmpty)) {
@@ -327,10 +379,10 @@ Future<void> showNotification(RemoteMessage message, WidgetRef? ref) async {
           message.data['logo'] ?? '',
           message.data['bigimage'],
           message.data['showBigText'] == 'true' ? true : false,
-          message);
+          resolvedMessage);
     } else {
       notificationService.showSimpleNotification(
-          message.data['title'], message.data['body'], message);
+          message.data['title'], message.data['body'], resolvedMessage);
     }
   }
 }
@@ -414,9 +466,9 @@ void main() async {
     Pdfrx.cacheDirectoryPath = dir.path;
   }
 
-  if (kReleaseMode) {
-    debugPrint = (String? message, {int? wrapWidth}) {};
-  }
+  // if (kReleaseMode) {
+  //   debugPrint = (String? message, {int? wrapWidth}) {};
+  // }
 
   if (!kIsWeb) {
     try {
@@ -1677,14 +1729,23 @@ class NotificationController {
   static Future<void> onActionReceivedMethod(
       ReceivedAction receivedAction) async {
     debugPrint(
-        'Received action is - ${receivedAction.actionType} and payload is - ${receivedAction.payload}');
+        'Received action is in main - ${receivedAction.actionType} and payload is - ${receivedAction.payload}');
+
+    // Resolve dynamic IDs like <uid>, <userid>, <displayname>, <username>
+    // from the same session source used by _resolveNotificationUrl.
+    final payload = await Utility.resolveNotificationPayloadPlaceholders(
+      receivedAction.payload,
+    );
+
     if (receivedAction.actionType == ActionType.SilentAction ||
         receivedAction.actionType == ActionType.SilentBackgroundAction) {
       // For background actions, you must hold the execution until the end
       debugPrint(
           'Message sent via notification input: "${receivedAction.buttonKeyInput}"');
       // await executeLongTaskInBackground();
-    } else if (receivedAction.payload?['type'] == 'cogniHW') {
+    } else if (payload['type'] == 'cogniHW') {
+      print(
+          'Received action is in main - ${receivedAction.actionType} and payload is - $payload');
       SharedPreferences prefs = await SharedPreferences.getInstance();
 
       String? userType = prefs.getString(LocalConstant.KEY_USER_TYPE);
@@ -1719,9 +1780,9 @@ class NotificationController {
           (route) => false,
         );
       }
-    } else if (receivedAction.payload != null &&
-        receivedAction.payload?['type'] != null &&
-        receivedAction.payload!['type'] == 'logout') {
+    } else if (payload['type'] != null && payload['type'] == 'logout') {
+      print(
+          'Received action is in main - ${receivedAction.actionType} and payload is - $payload');
       await Utility.clearData();
       Navigator.pushAndRemoveUntil(
         MyApp.navigatorKey.currentContext!,
@@ -1730,9 +1791,7 @@ class NotificationController {
         ),
         (route) => false,
       );
-    } else if (receivedAction.payload != null &&
-        receivedAction.payload!['promo'] != null &&
-        receivedAction.payload!['promo'] == 'saathi') {
+    } else if (payload['promo'] != null && payload['promo'] == 'saathi') {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       if (AppFlavor == null) {
         PackageInfo packageInfo = await PackageInfo.fromPlatform();
@@ -1757,22 +1816,12 @@ class NotificationController {
           MyApp.navigatorKey.currentState!.context,
           MaterialPageRoute(
             builder: (context) => ZllTicketDetails(
-              ticketId: receivedAction.payload!['id']!,
+              ticketId: payload['id']!,
               bid: AppFlavor == 'kidzee' ? '1' : '2',
-              businessUserId: receivedAction.payload!['business_user_id']!,
+              businessUserId: payload['business_user_id']!,
               userId: userName,
               mColor: kPrimaryLightColor,
-            ) /* getDeferredWidget(
-                child: (context) => zllsaathi.ZllTicketDetails(
-                      ticketId: receivedAction.payload!['id']!,
-                      bid: AppFlavor == 'kidzee' ? '1' : '2',
-                      businessUserId:
-                          receivedAction.payload!['business_user_id']!,
-                      userId: userName,
-                      mColor: kPrimaryLightColor,
-                    ),
-                loadLibrary: zllsaathi.loadLibrary()) */
-            ,
+            ),
           ),
         );
       } else {
@@ -1780,133 +1829,76 @@ class NotificationController {
             MyApp.navigatorKey.currentState!.context,
             MaterialPageRoute(
               builder: (context) => ZllTicketDetails(
-                ticketId: receivedAction.payload!['id']!,
+                ticketId: payload['id']!,
                 bid: AppFlavor == 'kidzee' ? '1' : '2',
-                businessUserId: receivedAction.payload!['business_user_id']!,
+                businessUserId: payload['business_user_id']!,
                 userId: userName,
                 mColor: kPrimaryLightColor,
-              ) /* getDeferredWidget(
-                  child: (context) => zllsaathi.ZllTicketDetails(
-                        ticketId: receivedAction.payload!['id']!,
-                        bid: AppFlavor == 'kidzee' ? '1' : '2',
-                        businessUserId:
-                            receivedAction.payload!['business_user_id']!,
-                        userId: userName,
-                        mColor: kPrimaryLightColor,
-                      ),
-                  loadLibrary: zllsaathi.loadLibrary()) */
-              ,
+              ),
             ),
             (route) => false);
       }
-
-      // ZllTicket(
-      //     MyApp.navigatorKey.currentState!.context,
-      //     receivedAction.payload!['id']!,
-      //     AppFlavor == 'kidzee' ? '1' : '2',
-      //     receivedAction.payload!['business_user_id']!,
-      //     userName,
-      //     kPrimaryLightColor);
-//       debugPrint('Rougther 1467 Open Ticket Details');
-    } else if (receivedAction.payload != null &&
-        receivedAction.payload?['Video_path'] != null) {
+    } else if (payload['Video_path'] != null) {
       Navigator.push(
           MyApp.navigatorKey.currentState!.context,
           MaterialPageRoute(
               builder: (context) => VideoPlayer(
-                    Title: receivedAction.payload!['Video_path']!,
-                    path: receivedAction.payload!['Video_path']!,
-                  ) /* getDeferredWidget(
-                  child: (context) => videoPlayer.VideoPlayer(
-                        Title: receivedAction.payload!['Video_path']!,
-                        path: receivedAction.payload!['Video_path']!,
-                      ),
-                  loadLibrary: videoPlayer.loadLibrary())) */
-              ));
-    } else if (receivedAction.payload != null &&
-        receivedAction.payload!['url'] != null &&
-        receivedAction.payload!['url']!.isNotEmpty) {
-      if (receivedAction.payload!['url']!.contains('kidzeeapp')) {
-        String url = receivedAction.payload!['url'] ?? '';
-
+                    Title: payload['Video_path']!,
+                    path: payload['Video_path']!,
+                  )));
+    } else if (payload['url'] != null && payload['url']!.isNotEmpty) {
+      final resolvedUrl = payload['url']!;
+      if (resolvedUrl.contains('kidzeeapp')) {
         SharedPreferences sp = await SharedPreferences.getInstance();
-        sp.setString(LocalConstant.KEY_DEEPLINK_URL, url);
-
-        // if (await canLaunchUrl(Uri.parse(url))) {
-        //   await launchUrl(Uri.parse(url));
-        // } else {
-        //   throw 'Could not launch $url';
-        // }
-      } else if (receivedAction.payload!.containsKey('type') &&
-          receivedAction.payload!['type'] == 'tb') {
+        sp.setString(LocalConstant.KEY_DEEPLINK_URL, resolvedUrl);
+      } else if (payload.containsKey('type') && payload['type'] == 'tb') {
         Navigator.push(
           MyApp.navigatorKey.currentState!.context,
           MaterialPageRoute(
               builder: (context) => MyWebsiteView(
                     title: 'ZllSaathi',
-                    url: receivedAction.payload!['url'] ?? '',
-                  ) /* getDeferredWidget(
-                  child: (context) => mywebsiteview.MyWebsiteView(
-                        title: 'ZllSaathi',
-                        url: receivedAction.payload!['url'] ?? '',
-                      ),
-                  loadLibrary: mywebsiteview.loadLibrary()) */
-              ),
+                    url: resolvedUrl,
+                  )),
         );
       } else {
+        print(
+            'Received action for url is working and data is - $resolvedUrl');
         Navigator.push(
           MyApp.navigatorKey.currentState!.context,
           MaterialPageRoute(
               builder: (context) => MyWebsiteView(
-                    title: receivedAction.payload!['url'] ?? '',
-                    url: receivedAction.payload!['url'] ?? '',
-                  ) /* getDeferredWidget(
-                  child: (context) => mywebsiteview.MyWebsiteView(
-                        title: receivedAction.payload!['url'] ?? '',
-                        url: receivedAction.payload!['url'] ?? '',
-                      ),
-                  loadLibrary: mywebsiteview.loadLibrary()) */
-              ),
+                    title: resolvedUrl,
+                    url: resolvedUrl,
+                  )),
         );
       }
-    } else if (receivedAction.payload != null &&
-        receivedAction.payload!['type'] != null &&
-        receivedAction.payload!['type'] == 'LogbookStatus') {
+    } else if (payload['type'] != null &&
+        payload['type'] == 'LogbookStatus') {
       debugPrint(
-          'Received action for logbookstatus is working and data is - ${receivedAction.payload!['day']} ${receivedAction.payload!['status']}');
+          'Received action for logbookstatus is working and data is - ${payload['day']} ${payload['status']}');
       Navigator.pushAndRemoveUntil(
           MyApp.navigatorKey.currentState!.context,
           MaterialPageRoute(
             builder: (context) => MyHomePage(
                 profileImage: '',
                 title: '',
-                day: receivedAction.payload!['day'],
-                status: receivedAction.payload!['status'],
-                programId: receivedAction.payload![
-                    'programId']) /* getDeferredWidget(
-                child: (context) => homeScreen.MyHomePage(
-                    profileImage: '',
-                    title: '',
-                    day: receivedAction.payload!['day'],
-                    status: receivedAction.payload!['status'],
-                    programId: receivedAction.payload!['programId']),
-                loadLibrary: homeScreen.loadLibrary()) */
-            ,
+                day: payload['day'],
+                status: payload['status'],
+                programId: payload['programId']),
           ),
           (route) => false);
-    } else if (receivedAction.payload != null &&
-        receivedAction.payload!['promo'] != null) {
-      var data = receivedAction.payload;
-      log('Promo is getting called - $data');
+    } else if (payload['promo'] != null) {
+      print('found promo');
+      print('Promo is getting called - $payload');
 
-      if (data != null) {
-        // var allData = jsonDecode(data);
-        PromoNotification.displayPromoNotification(
-            receivedAction.payload!['title']!,
-            receivedAction.payload!['body']!,
-            receivedAction.payload!['bigimage']!,
-            receivedAction.payload!['actionUrl']!);
-      }
+      final actionUrl = payload['actionUrl'] ?? '';
+      PromoNotification.displayPromoNotification(
+          payload['title']!,
+          payload['body']!,
+          payload['bigimage']!,
+          actionUrl);
+    } else {
+      print('Unable to handle notification action - $payload');
     }
   }
 

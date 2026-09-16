@@ -12,6 +12,7 @@ class MyPdfApp extends StatefulWidget {
   final String title;
   final String module;
   final String filename;
+  final bool isDownload;
   final MyHomeworkModel? model;
   final VoidCallback? imageUploadFunction;
 
@@ -21,6 +22,7 @@ class MyPdfApp extends StatefulWidget {
     required this.filename,
     required this.module,
     required this.worksheetUrl,
+    this.isDownload = false,
     this.model,
     this.imageUploadFunction,
   });
@@ -70,8 +72,7 @@ class _MyPdfAppState extends State<MyPdfApp> {
     return lower.startsWith('http://') || lower.startsWith('https://');
   }
 
-  String _proxyUrl(String url) =>
-      '$_proxyUrlPrefix${Uri.encodeComponent(url)}';
+  String _proxyUrl(String url) => '$_proxyUrlPrefix${Uri.encodeComponent(url)}';
 
   String getProxyUrl() => _proxyUrl(widget.worksheetUrl);
 
@@ -158,7 +159,7 @@ class _MyPdfAppState extends State<MyPdfApp> {
               onPressed: _usingProxy ? _retryDirect : _scheduleProxySwitch,
               child: Text(_usingProxy ? 'Retry Direct' : 'Retry via Proxy'),
             ),
-            if (kIsWeb) ...[
+            if (kIsWeb && widget.isDownload) ...[
               const SizedBox(height: 8),
               TextButton.icon(
                 onPressed: () =>
@@ -179,12 +180,16 @@ class _MyPdfAppState extends State<MyPdfApp> {
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
-          if (kIsWeb)
+          if (widget.isDownload)
             IconButton(
               tooltip: 'Download',
               icon: const Icon(Icons.download),
-              onPressed: () =>
-                  Utility.downloadFile(widget.worksheetUrl, '${widget.filename}.pdf'),
+              onPressed: () => Utility.downloadFile(
+                widget.worksheetUrl,
+                widget.filename.toLowerCase().endsWith('.pdf')
+                    ? widget.filename
+                    : '${widget.filename}.pdf',
+              ),
             ),
           IconButton(
             icon: const Icon(Icons.zoom_in),

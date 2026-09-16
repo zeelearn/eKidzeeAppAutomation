@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -41,16 +40,19 @@ void makePhoneCall(Uri url) async {
   }
 }
 Future<String> getUniqueDeviceId() async {
+  if (kIsWeb) {
+    return 'web';
+  }
   String uniqueDeviceId = '';
 
   var deviceInfo = DeviceInfoPlugin();
 
-  if (Platform.isIOS) { // import 'dart:io'
+  if (defaultTargetPlatform == TargetPlatform.iOS) {
     var iosDeviceInfo = await deviceInfo.iosInfo;
-    uniqueDeviceId = '${iosDeviceInfo.identifierForVendor}'; // unique ID on iOS
-  } else if(Platform.isAndroid) {
+    uniqueDeviceId = '${iosDeviceInfo.identifierForVendor}';
+  } else if (defaultTargetPlatform == TargetPlatform.android) {
     var androidDeviceInfo = await deviceInfo.androidInfo;
-    uniqueDeviceId = '${androidDeviceInfo.id}' ; // unique ID on Android
+    uniqueDeviceId = '${androidDeviceInfo.id}';
   }
   return uniqueDeviceId;
 }

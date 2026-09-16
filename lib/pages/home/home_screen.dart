@@ -51,6 +51,7 @@ import 'package:ekidzee/pages/pentemind/module/homework/homework_home_kes.dart';
 import 'package:ekidzee/pages/pentemind/module/myclass/announancement.dart';
 import 'package:ekidzee/pages/pentemind/module/progress/progress.dart';
 import 'package:ekidzee/pages/pentemind/module/summercamp/funactivity.dart';
+import 'package:ekidzee/qr/qr_scannerv2.dart';
 import 'package:ekidzee/theme/kidzee_light.dart';
 import 'package:ekidzee/utils/theme/colors/light_colors.dart';
 import 'package:ekidzee/widget/bottomsheet.dart';
@@ -107,7 +108,6 @@ import '../../model/ActivityPlanerModel.dart';
 import '../../model/parent_info.dart';
 import '../../model/user_model.dart';
 import '../../pushNotification/promoNotificationDialog.dart';
-import '../../qr/qr_scanner.dart';
 import '../../videoplayer/VideoPlayer.dart';
 import '../../widget/MyWebSiteView.dart';
 import '../Login/PrivacyPolicyScreen.dart';
@@ -364,6 +364,21 @@ class _MyHomePageState extends State<MyHomePage>
     );
 
     super.initState();
+    // Timer(const Duration(milliseconds: 5000), () {
+    //   ZllResourceResponse resource = ZllResourceResponse(data: [
+    //     CelibrationModel(
+    //         eventId: 100,
+    //         title: 'Teachers Celibration',
+    //         validfrom: '2023-01-01',
+    //         validto: '2027-12-31',
+    //         contenturl:
+    //             'https://kidzee.com/<userid>/<displayname>/<username>/<uid>',
+    //         viewurl:
+    //             'https://kidzee.com/<userid>/<displayname>/<username>/<uid>',
+    //         displayIn: 'main')
+    //   ], success: 200);
+    //   onSuccess(resource);
+    // });
 
     initUserData();
     OctiveConfig().initTheme(ChristmasTheme.octaveTheme);
@@ -413,15 +428,22 @@ class _MyHomePageState extends State<MyHomePage>
       }
       isInternet = true;
       updateInternetStatus();
-      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        debugPrint('A new onMessageOpenedApp event was published!');
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
+        print('A new onMessageOpenedApp event was published!');
         Map<String, String> data = {};
 
         if (message.notification != null && message.data == null) {
           debugPrint('its simple Notification home 376');
         } else {
           debugPrint('its data Notification 316');
-          //debugPrint('its topic Notification');
+          final resolvedUrl = await Utility.resolveUserPlaceholdersFromSession(
+            (message.data['url'] ?? '').toString(),
+          );
+          final resolvedActionUrl =
+              await Utility.resolveUserPlaceholdersFromSession(
+            (message.data['actionUrl'] ?? message.data['url'] ?? '').toString(),
+          );
+
           if (kIsWeb) {
             Get.snackbar(
               message.data['title'], // Title
@@ -433,9 +455,9 @@ class _MyHomePageState extends State<MyHomePage>
             );
           } else if (message.data['type'] == 'rateUs') {
             rateUs();
-          } else if (message.data['url'] != null &&
-              message.data['url'].toString().contains('kidzeeapp')) {
-            deepLinkCommonFunction(message.data['url']);
+          } else if (resolvedUrl.isNotEmpty &&
+              resolvedUrl.contains('kidzeeapp')) {
+            deepLinkCommonFunction(Uri.tryParse(resolvedUrl));
           } else if (message.data.containsKey('type') &&
               message.data['type'] == 'td') {
             debugPrint('its zllSaathiNotification Notification 410');
@@ -443,6 +465,20 @@ class _MyHomePageState extends State<MyHomePage>
           } else if (message.data.containsKey('topic') &&
               message.data['topic'] != '') {
             identifyNotification(message);
+          } else if (resolvedUrl.isNotEmpty) {
+            await openCelebrationWebsite(
+              context,
+              title: (message.data['title'] ?? '').toString(),
+              url: resolvedUrl,
+            );
+          } else if (resolvedActionUrl.isNotEmpty &&
+              message.data['type'] == 'promo') {
+            PromoNotification.displayPromoNotification(
+              message.data['title'],
+              message.data['body'],
+              message.data['bigimage'],
+              resolvedActionUrl,
+            );
           } else {
             NotificationService notificationService = NotificationService();
             notificationService.showSimpleNotification(
@@ -457,7 +493,7 @@ class _MyHomePageState extends State<MyHomePage>
       notificationSettingCheck();
       if (!kIsWeb) checkForInitialMessage();
 
-      //loadAppEvents();
+      loadAppEvents();
     }
   }
 
@@ -755,7 +791,7 @@ class _MyHomePageState extends State<MyHomePage>
       String fcmToken = (await FirebaseMessaging.instance.getToken(
           vapidKey:
               'BHGE6JChODel_ADUDWd0zGTFL2uwQEZU7i_hdnwYSFa8rbpLpqEL8Ana0gx4DVPtBXeKDsRfQUXlqz5oNcnzvy4'))!;
-      debugPrint('FCM Token is - $fcmToken');
+      print('FCM Token is - $fcmToken');
       FirebaseAnalyticsUtils().setUserType(userType);
       if (fcmToken.isNotEmpty) {
         PackageInfo packageInfo = await PackageInfo.fromPlatform();
@@ -811,7 +847,7 @@ class _MyHomePageState extends State<MyHomePage>
     }
   }
 
-  onHolidyClick() {
+  HolidayMasterPage onHolidyClick() {
     UserPayload demoPayload = UserPayload(
       usertype: userType,
       userid: userId,
@@ -1376,23 +1412,35 @@ class _MyHomePageState extends State<MyHomePage>
   Future<void> checkForInitialMessage() async {
     try {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-        FirebaseMessaging.instance.getInitialMessage().then((value) {
+        FirebaseMessaging.instance.getInitialMessage().then((value) async {
           log('Message from initial function is - ${value?.data}');
-          if (value != null &&
-              value.data['type'] != null &&
-              value.data['type'] == 'promo') {
+          if (value == null) return;
+
+          final resolvedUrl = await Utility.resolveUserPlaceholdersFromSession(
+            (value.data['url'] ?? '').toString(),
+          );
+          final resolvedActionUrl =
+              await Utility.resolveUserPlaceholdersFromSession(
+            (value.data['actionUrl'] ?? value.data['url'] ?? '').toString(),
+          );
+
+          if (value.data['type'] != null && value.data['type'] == 'promo') {
             PromoNotification.displayPromoNotification(
               value.data['title'],
               value.data['body'],
               value.data['bigimage'],
-              value.data.containsKey('url') ? value.data['url'] : '',
+              resolvedActionUrl.isNotEmpty ? resolvedActionUrl : resolvedUrl,
             );
-          } else if (value != null &&
-              value.data['url'] != null &&
-              value.data['url'].toString().contains('kidzeeapp')) {
-            deepLinkCommonFunction(value.data['url']);
-          } else if (value != null &&
-              value.data['type'] != null &&
+          } else if (resolvedUrl.isNotEmpty &&
+              resolvedUrl.contains('kidzeeapp')) {
+            deepLinkCommonFunction(Uri.tryParse(resolvedUrl));
+          } else if (resolvedUrl.isNotEmpty) {
+            await openCelebrationWebsite(
+              context,
+              title: (value.data['title'] ?? '').toString(),
+              url: resolvedUrl,
+            );
+          } else if (value.data['type'] != null &&
               value.data['type'] == 'LogbookStatus') {
             var day = value.data['day'];
             var status = value.data['status'];
@@ -1743,10 +1791,17 @@ class _MyHomePageState extends State<MyHomePage>
               ),
               InkWell(
                 onTap: () {
+                  if (kIsWeb) {
+                    Utility.showMessage(
+                      context,
+                      'QR scanning is available on the Android and iOS apps.',
+                    );
+                    return;
+                  }
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const KidzeeQRScreen(),
+                      builder: (context) => const KidzeeQRScreenV2(),
                     ),
                   );
                 },
@@ -4585,9 +4640,15 @@ class _MyHomePageState extends State<MyHomePage>
   void onSuccess(value) async {
     SharedPreferences sp = await SharedPreferences.getInstance();
     if (sp.getString(LocalConstant.KEY_DEEPLINK_URL) != null) {
-      deepLinkCommonFunction(
-        Uri.parse(sp.getString(LocalConstant.KEY_DEEPLINK_URL) ?? ''),
+      final rawLink = sp.getString(LocalConstant.KEY_DEEPLINK_URL) ?? '';
+      final resolvedLink = Utility.resolveDynamicUserPlaceholders(
+        rawLink,
+        userId: userId,
+        uid: uid,
+        displayName: displayName,
+        userName: userName,
       );
+      deepLinkCommonFunction(Uri.tryParse(resolvedLink));
       sp.remove(LocalConstant.KEY_DEEPLINK_URL);
     }
     debugPrint('OnSuccess is - ${widget.type}');
@@ -4632,11 +4693,18 @@ class _MyHomePageState extends State<MyHomePage>
               userType == 'P' ||
               userType == 'CM' ||
               userType == 'SRTEA') {
+            final resolvedContentUrl = Utility.resolveDynamicUserPlaceholders(
+              eventModel.data[0].contenturl,
+              userId: userId,
+              uid: uid,
+              displayName: displayName,
+              userName: userName,
+            );
             PromoNotification.displayCustomPromoNotification(
               'Teachers Day Celebration',
               '',
               '',
-              null,
+              resolvedContentUrl,
               userType == 'TEACH' ||
                       userType == 'SRTEA' ||
                       userType == 'CC' ||
@@ -4655,8 +4723,32 @@ class _MyHomePageState extends State<MyHomePage>
           }
         } else {
           for (var event in eventModel.data) {
-            if (event.visibleTo.isEmpty || event.visibleTo == userType)
-              KidzeeBottomSheet().showBSPromo(context, event, this);
+            if (event.visibleTo.isEmpty || event.visibleTo == userType) {
+              final resolvedUrl = Utility.resolveDynamicUserPlaceholders(
+                event.contenturl,
+                userId: userId,
+                uid: uid,
+                displayName: displayName,
+                userName: userName,
+              );
+              final resolvedEvent = CelibrationModel(
+                eventId: event.eventId,
+                title: event.title,
+                validfrom: event.validfrom,
+                validto: event.validto,
+                contenturl: resolvedUrl,
+                viewurl: Utility.resolveDynamicUserPlaceholders(
+                  event.viewurl,
+                  userId: userId,
+                  uid: uid,
+                  displayName: displayName,
+                  userName: userName,
+                ),
+                displayIn: event.displayIn,
+                visibleTo: event.visibleTo,
+              );
+              KidzeeBottomSheet().showBSPromo(context, resolvedEvent, this);
+            }
           }
           //KidzeeBottomSheet().showBSPromo(context, eventModel.data[0], this);
         }
@@ -4671,41 +4763,47 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   void deepLinkCommonFunction(Uri? initialURI) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String uid = prefs.getString(LocalConstant.KEY_UID) as String;
-    debugPrint(
-      'udid from deep linkk is - ${initialURI!.path.split('/').elementAt(1)}',
+    if (initialURI == null) return;
+
+    final resolvedRaw = Utility.resolveDynamicUserPlaceholders(
+      initialURI.toString(),
+      userId: userId,
+      uid: uid,
+      displayName: displayName,
+      userName: userName,
     );
-    if (initialURI.path.contains('open')) {
-    } else if (initialURI.toString().contains('kidzeeapp://login/')) {
-      //debugPrint('init handler ${initialURI.queryParameters.toString()}');
+    final resolvedUri = Uri.tryParse(resolvedRaw) ?? initialURI;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    debugPrint(
+      'udid from deep linkk is - ${resolvedUri.path.split('/').elementAt(1)}',
+    );
+    if (resolvedUri.path.contains('open')) {
+    } else if (resolvedUri.toString().contains('kidzeeapp://login/')) {
       switchUser(
-        initialURI.queryParameters['username'].toString(),
-        initialURI.queryParameters['password'].toString(),
+        resolvedUri.queryParameters['username'].toString(),
+        resolvedUri.queryParameters['password'].toString(),
       );
-    } else if (initialURI.toString().contains('kidzeeapp')) {
-      //Saathi Ticket Details
+    } else if (resolvedUri.toString().contains('kidzeeapp')) {
       ZllTicket(
         context,
-        initialURI.queryParameters['id']!,
-        initialURI.queryParameters['b_id']!,
-        initialURI.queryParameters['bu_id']!,
-        initialURI.queryParameters['u_id']!.replaceAll('.', ''),
+        resolvedUri.queryParameters['id']!,
+        resolvedUri.queryParameters['b_id']!,
+        resolvedUri.queryParameters['bu_id']!,
+        resolvedUri.queryParameters['u_id']!.replaceAll('.', ''),
         kPrimaryLightColor,
       );
-    } else if (initialURI.toString().contains(
+    } else if (resolvedUri.toString().contains(
           'zllsaathi.zeelearn.com/ticketDetail',
         )) {
-      //Saathi Ticket Details
       ZllTicket(
         context,
-        initialURI.queryParameters['id']!,
-        initialURI.queryParameters['b_id']!,
-        initialURI.queryParameters['bu_id']!,
-        initialURI.queryParameters['u_id']!.replaceAll('.', ''),
+        resolvedUri.queryParameters['id']!,
+        resolvedUri.queryParameters['b_id']!,
+        resolvedUri.queryParameters['bu_id']!,
+        resolvedUri.queryParameters['u_id']!.replaceAll('.', ''),
         kPrimaryLightColor,
       );
-    } else if (initialURI.path.split('/').elementAt(1) != uid) {
+    } else if (resolvedUri.path.split('/').elementAt(1) != uid) {
       // if (!mounted) return;
       // showAdaptiveDialog(
       //   context: context,
@@ -4724,10 +4822,10 @@ class _MyHomePageState extends State<MyHomePage>
       //     );
       //   },
       // );
-    } else if (initialURI.path.contains(DeepLinkingConstants.parentHomeWork)) {
+    } else if (resolvedUri.path.contains(DeepLinkingConstants.parentHomeWork)) {
       _moduleTitle = LocalConstant.MODULE_PARENT_PARENT_HOMEWORK;
       _selectedDestination = PENTEMIND_LEARNING_GOAL;
-      var finalURl = initialURI.path.split('/');
+      var finalURl = resolvedUri.path.split('/');
 
       //debugPrint('Delay after launch from deep link is - $initialURI');
       _currentPentemind = MyHomeworkScreen(
@@ -4737,15 +4835,15 @@ class _MyHomePageState extends State<MyHomePage>
       );
 
       setState(() {});
-    } else if (initialURI.path.contains(
+    } else if (resolvedUri.path.contains(
           DeepLinkingConstants.learningGoalDaily,
         ) ||
-        initialURI.path.contains(DeepLinkingConstants.learningGoalTeacher)) {
+        resolvedUri.path.contains(DeepLinkingConstants.learningGoalTeacher)) {
       if (!mounted) {
         return;
       }
 
-      var finalURl = Uri.decodeFull(initialURI.path).split('/');
+      var finalURl = Uri.decodeFull(resolvedUri.path).split('/');
 
       Navigator.push(
         context,
@@ -4771,7 +4869,7 @@ class _MyHomePageState extends State<MyHomePage>
           ),
         ),
       );
-    } else if (initialURI.path.contains(DeepLinkingConstants.notification)) {
+    } else if (resolvedUri.path.contains(DeepLinkingConstants.notification)) {
       if (!mounted) {
         return;
       }
@@ -4779,10 +4877,10 @@ class _MyHomePageState extends State<MyHomePage>
         context,
         MaterialPageRoute(builder: (context) => goToUserNotification()),
       );
-    } else if (initialURI.path.contains(DeepLinkingConstants.homework)) {
+    } else if (resolvedUri.path.contains(DeepLinkingConstants.homework)) {
       _moduleTitle = LocalConstant.MODULE_PARENT_PARENT_HOMEWORK;
       _selectedDestination = PENTEMIND_LEARNING_GOAL;
-      var finalURl = initialURI.path.split('/');
+      var finalURl = resolvedUri.path.split('/');
 
 //       debugPrint('Delay after launch from deep link is - $initialURI');
       _currentPentemind = MyHomeworkScreen(
@@ -4792,10 +4890,10 @@ class _MyHomePageState extends State<MyHomePage>
       );
 
       setState(() {});
-    } else if (initialURI.path.contains(DeepLinkingConstants.learningGoals)) {
+    } else if (resolvedUri.path.contains(DeepLinkingConstants.learningGoals)) {
       _moduleTitle = 'Learning Goals';
 
-      var finalURl = Uri.decodeFull(initialURI.path).split('/');
+      var finalURl = Uri.decodeFull(resolvedUri.path).split('/');
 
       log('Decoded url string list is - $finalURl');
 
@@ -4804,21 +4902,21 @@ class _MyHomePageState extends State<MyHomePage>
         listener: this,
         term: _curriculamTern,
         deepLinkingEnabled: true,
-        page: initialURI.path.contains('dev') ? 'dev' : 'add',
+        page: resolvedUri.path.contains('dev') ? 'dev' : 'add',
         day: finalURl.length >= 4 ? finalURl.elementAt(3) : '1',
         observation: finalURl.length >= 5 ? finalURl.elementAt(4) : null,
         session: finalURl.length >= 6 ? finalURl.elementAt(5) : null,
       );
       setState(() {});
-    } else if (initialURI.path.contains(DeepLinkingConstants.logBook)) {
+    } else if (resolvedUri.path.contains(DeepLinkingConstants.logBook)) {
       _moduleTitle = 'Facilitator Tools';
 
       _selectedDestination = PENTEMIND_LEARNING_GOAL;
       _currentPentemind = FacilatorSaysHome(
           term: _curriculamTern, isKes: isKES(), listener: this);
       setState(() {});
-    } else if (initialURI.path.contains(DeepLinkingConstants.dailyActivity)) {
-      var finalURl = initialURI.path.split('/');
+    } else if (resolvedUri.path.contains(DeepLinkingConstants.dailyActivity)) {
+      var finalURl = resolvedUri.path.split('/');
       _moduleTitle = 'Daily Activity';
       _selectedDestination = PENTEMIND_LEARNING_GOAL;
       _currentPentemind = DailyActiviyHome(
@@ -4831,7 +4929,7 @@ class _MyHomePageState extends State<MyHomePage>
         day: finalURl[5],
       );
       setState(() {});
-    } else if (initialURI.path.contains(DeepLinkingConstants.myClass)) {
+    } else if (resolvedUri.path.contains(DeepLinkingConstants.myClass)) {
       _moduleTitle = 'My Class';
       _selectedDestination = PENTEMIND_LEARNING_GOAL;
 
@@ -4848,7 +4946,7 @@ class _MyHomePageState extends State<MyHomePage>
       );
       setState(() {});
     } else {
-      log('Else part is getting called of deep link - $initialURI');
+      log('Else part is getting called of deep link - $resolvedUri');
     }
   }
 }
