@@ -126,6 +126,7 @@ jobs:
             --exclude ios/Pods \
             --exclude android/.gradle
             --exclude '**/firebase_options.dart'
+            --exclude lib/pages/notification/firebase_options.dart
 
   # ============================================================
   # 4. TRIVY DEPENDENCY / FILESYSTEM SCAN
