@@ -188,15 +188,15 @@ jobs:
           git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
 
-      # - name: Get dependencies
-      #   run: flutter pub get
+      - name: Get dependencies
+        run: flutter pub get
 
       - name: Check outdated dependencies
         continue-on-error: true
         run: flutter pub outdated
 
-      # - name: Analyze Dart code
-      #   run: flutter analyze
+      - name: Analyze Dart code
+        run: flutter analyze
 
       - name: Run Flutter tests
         run: flutter test
