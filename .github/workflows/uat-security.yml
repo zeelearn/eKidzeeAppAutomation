@@ -124,7 +124,14 @@ jobs:
             --exclude node_modules \
             --exclude .dart_tool \
             --exclude ios/Pods \
-            --exclude android/.gradle
+            --exclude android/.gradle\
+            --exclude '**/firebase_options.dart'\
+            --exclude lib/pages/notification/firebase_options.dart\
+            --exclude .github \
+            --exclude web/sqflite_sw.js\
+            --exclude ios/Runner/Info.plist\
+            --exclude ios/Runner/Infomlzs.plist\
+            --exclude android/app/.cxx
 
   # ============================================================
   # 4. TRIVY DEPENDENCY / FILESYSTEM SCAN
@@ -173,6 +180,13 @@ jobs:
 
       - name: Flutter version
         run: flutter --version
+
+      # Authenticate GitHub so private Git dependencies
+      # such as ZeeLearnLtd/pageddatatable can be cloned.
+      - name: Configure GitHub authentication
+        run: |
+          git config --global url."https://${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
 
       - name: Get dependencies
         run: flutter pub get
