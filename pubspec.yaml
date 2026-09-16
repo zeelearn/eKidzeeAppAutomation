@@ -145,15 +145,12 @@ dependencies:
   #      ref: uat
 
   literaoctave:
-    # git:
-    #   url: https://github.com/ZeeLearnLtd/litera_octave.git
-    #   recurse-submodules: true
-    #   ref: uat
-    #path: ../litera_octave
-    path: ../UAT/nova_octave_uat_v2
-    #path: ../UAT/octave_firebasesync
-    #path: ../UAfontsT/litera_octave_congnimind
-
+    git:
+      url: https://github.com/zeelearn/literaoctaveAutomation.git
+      recurse-submodules: true
+      ref: main
+    
+    
 
 
   paged_datatable:
