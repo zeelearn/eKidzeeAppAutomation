@@ -185,7 +185,7 @@ jobs:
       # such as ZeeLearnLtd/pageddatatable can be cloned.
       - name: Configure GitHub authentication
         run: |
-          git config --global url."https://${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
 
       - name: Get dependencies
