@@ -67,3 +67,9 @@ sudo xattr -rd com.apple.quarantine /Users/sudhir.patil/Development/flutter/AppC
 
 
 flutter run -d web-server --web-hostname=10.112.1.34 --web-port=8000
+
+
+curl -L "https://cdn.jsdelivr.net/npm/pdfjs-dist@2.12.313/build/pdf.js" \
+  -o /tmp/pdf.js
+
+  openssl dgst -sha384 -binary /tmp/pdf.js | openssl base64 -A

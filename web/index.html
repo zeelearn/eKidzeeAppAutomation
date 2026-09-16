@@ -35,43 +35,49 @@
 
   <script type="application/javascript" src="/assets/packages/flutter_inappwebview_web/assets/web/web_support.js"
     defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.2/dist/hls.min.js"
+    integrity="sha384-QHoMEQEjeievZsHu5ejPFm+o1o93XoWIEziW/+oc9LLMGsPNAbp1pN4PHhI/KIzW%" crossorigin="anonymous">
+    </script>
 
 
 </head>
 <script>
-    document.addEventListener('contextmenu', function (e) {
+  document.addEventListener('contextmenu', function (e) {
+    e.preventDefault();
+  });
+  window.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
       e.preventDefault();
-    });
-    window.addEventListener('keydown', function (e) {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-          e.preventDefault();
-          alert('Printing is disabled.');
-        }
-        // F12
-        if (e.keyCode === 123) {
-          e.preventDefault();
-        }
+      alert('Printing is disabled.');
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+    }
 
-        // Ctrl+Shift+I / J / C / K
-        if (e.ctrlKey && e.shiftKey &&
-            (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'K')) {
-          e.preventDefault();
-        }
+    // Ctrl+Shift+I / J / C / K
+    if (e.ctrlKey && e.shiftKey &&
+      (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'K')) {
+      e.preventDefault();
+    }
 
-        // Ctrl+U (View Source)
-        if (e.ctrlKey && e.key === 'u') {
-          e.preventDefault();
-        }
-      });
+    // Ctrl+U (View Source)
+    if (e.ctrlKey && e.key === 'u') {
+      e.preventDefault();
+    }
+  });
 
-      window.onbeforeprint = function () {
-        alert('Printing is disabled.');
-      };
+  window.onbeforeprint = function () {
+    alert('Printing is disabled.');
+  };
 </script>
 
 <body>
-  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.12.313/build/pdf.js" type="text/javascript"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.12.313/build/pdf.js" type="text/javascript"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.2/dist/hls.min.js"
+    integrity="sha384-HeEj+Zc7mhjPnJeWsZsmOtSGky6+renQBNdQXMDTUwrB66TUul2gJbC+LCiVeiEI%" crossorigin="anonymous">
+    </script>
   <script type="text/javascript">
     pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@2.12.313/build/pdf.worker.min.js";
     pdfRenderOptions = {
