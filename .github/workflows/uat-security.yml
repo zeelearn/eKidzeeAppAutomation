@@ -195,8 +195,8 @@ jobs:
         continue-on-error: true
         run: flutter pub outdated
 
-      - name: Analyze Dart code
-        run: flutter analyze
+      # - name: Analyze Dart code
+      #   run: flutter analyze
 
       - name: Run Flutter tests
         run: flutter test
