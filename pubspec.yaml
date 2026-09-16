@@ -135,8 +135,8 @@ dependencies:
   responsive_framework: ^1.5.1
   screen_protector: ^1.4.2+1
 
-  saathi:
-    path: ../ZeeSathi/
+  # saathi:
+  #   path: ../ZeeSathi/
 
   # saathi:
   #    git:
