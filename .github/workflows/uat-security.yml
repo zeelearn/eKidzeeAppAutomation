@@ -90,6 +90,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+
   # ============================================================
   # 3. SAST - SEMGREP
   # ============================================================
@@ -124,17 +125,80 @@ jobs:
             --exclude node_modules \
             --exclude .dart_tool \
             --exclude ios/Pods \
-            --exclude android/.gradle\
-            --exclude '**/firebase_options.dart'\
-            --exclude lib/pages/notification/firebase_options.dart\
+            --exclude android/.gradle \
+            --exclude '**/firebase_options.dart' \
+            --exclude lib/pages/notification/firebase_options.dart \
             --exclude .github \
-            --exclude web/sqflite_sw.js\
-            --exclude ios/Runner/Info.plist\
-            --exclude ios/Runner/Infomlzs.plist\
+            --exclude web/sqflite_sw.js \
+            --exclude ios/Runner/Info.plist \
+            --exclude ios/Runner/Infomlzs.plist \
             --exclude android/app/.cxx
 
+
   # ============================================================
-  # 4. TRIVY DEPENDENCY / FILESYSTEM SCAN
+  # 4. SONARQUBE CODE QUALITY & SECURITY
+  # Runs only after Semgrep succeeds.
+  # Required GitHub configuration:
+  #   Secret   : SONAR_TOKEN
+  #   Variable : SONAR_HOST_URL
+  #   Variable : SONAR_PROJECT_KEY
+  # ============================================================
+
+  sonarqube:
+    name: 📊 SonarQube Quality Gate
+    needs:
+      - sast
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history improves SonarQube blame/new-code analysis.
+          fetch-depth: 0
+
+      - name: Validate SonarQube configuration
+        shell: bash
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "❌ Missing GitHub secret: SONAR_TOKEN"
+            exit 1
+          fi
+
+          if [ -z "$SONAR_HOST_URL" ]; then
+            echo "❌ Missing GitHub variable: SONAR_HOST_URL"
+            exit 1
+          fi
+
+          if [ -z "$SONAR_PROJECT_KEY" ]; then
+            echo "❌ Missing GitHub variable: SONAR_PROJECT_KEY"
+            exit 1
+          fi
+
+          echo "✅ SonarQube configuration found."
+
+      - name: Run SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+            -Dsonar.projectName=${{ github.event.repository.name }}
+            -Dsonar.sources=.
+            -Dsonar.sourceEncoding=UTF-8
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
+            -Dsonar.exclusions=**/.git/**,**/build/**,**/node_modules/**,**/.dart_tool/**,**/ios/Pods/**,**/android/.gradle/**,**/android/app/.cxx/**,**/firebase_options.dart,**/.github/**,**/web/sqflite_sw.js,**/ios/Runner/Info.plist,**/ios/Runner/Infomlzs.plist
+
+
+  # ============================================================
+  # 5. TRIVY DEPENDENCY / FILESYSTEM SCAN
   # ============================================================
 
   dependency-scan:
@@ -157,8 +221,9 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
 
+
   # ============================================================
-  # 5. FLUTTER / DART
+  # 6. FLUTTER / DART
   # ============================================================
 
   flutter:
@@ -187,7 +252,6 @@ jobs:
         run: |
           git config --global url."https://${{ secrets.REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
-
       - name: Get dependencies
         run: flutter pub get
 
@@ -201,8 +265,9 @@ jobs:
       - name: Run Flutter tests
         run: flutter test
 
+
   # ============================================================
-  # 6. NODE / ANGULAR
+  # 7. NODE / ANGULAR
   # ============================================================
 
   node:
@@ -279,8 +344,9 @@ jobs:
             --audit-level=high \
             --omit=dev
 
+
   # ============================================================
-  # 7. ANGULAR BUILD
+  # 8. ANGULAR BUILD
   # ============================================================
 
   angular-build:
@@ -319,8 +385,9 @@ jobs:
       - name: Angular Build
         run: ng build
 
+
   # ============================================================
-  # 8. LICENSE / DEPENDENCY POLICY
+  # 9. LICENSE / DEPENDENCY POLICY
   # ============================================================
 
   dependency-policy:
@@ -350,8 +417,9 @@ jobs:
 
           echo "Dependency policy check completed."
 
+
   # ============================================================
-  # 9. UAT SECURITY SUMMARY
+  # 10. UAT SECURITY SUMMARY
   # ============================================================
 
   uat-summary:
@@ -360,6 +428,7 @@ jobs:
       - detect
       - secret-scan
       - sast
+      - sonarqube
       - dependency-scan
       - flutter
       - node
@@ -371,17 +440,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Evaluate security results
         shell: bash
         run: |
-
           echo "=========================================="
           echo "       UAT SECURITY SUMMARY"
           echo "=========================================="
 
           echo "Secret Scan       : ${{ needs.secret-scan.result }}"
-          echo "SAST              : ${{ needs.sast.result }}"
+          echo "Semgrep SAST      : ${{ needs.sast.result }}"
+          echo "SonarQube         : ${{ needs.sonarqube.result }}"
           echo "Dependency Scan   : ${{ needs.dependency-scan.result }}"
           echo "Flutter           : ${{ needs.flutter.result }}"
           echo "Node.js           : ${{ needs.node.result }}"
@@ -400,6 +468,10 @@ jobs:
             FAILED=true
           fi
 
+          if [[ "${{ needs.sonarqube.result }}" == "failure" ]]; then
+            FAILED=true
+          fi
+
           if [[ "${{ needs.dependency-scan.result }}" == "failure" ]]; then
             FAILED=true
           fi
@@ -413,6 +485,10 @@ jobs:
           fi
 
           if [[ "${{ needs.angular-build.result }}" == "failure" ]]; then
+            FAILED=true
+          fi
+
+          if [[ "${{ needs.dependency-policy.result }}" == "failure" ]]; then
             FAILED=true
           fi
 
