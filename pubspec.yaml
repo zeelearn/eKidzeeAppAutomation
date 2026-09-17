@@ -138,17 +138,17 @@ dependencies:
   # saathi:
   #   path: ../ZeeSathi/
 
-  # saathi:
-  #    git:
-  #      url: https://github.com/ZeeLearnLtd/ZeeSathi.git
-  #      recurse-submodules: true
-  #      ref: uat
+  saathi:
+     git:
+       url: https://github.com/ZeeLearnLtd/ZeeSathi.git
+       recurse-submodules: true
+       ref: uat
 
-  # literaoctave:
-  #   git:
-  #     url: https://github.com/zeelearn/literaoctaveAutomation.git
-  #     recurse-submodules: true
-  #     ref: main
+  literaoctave:
+    git:
+      url: https://github.com/zeelearn/literaoctaveAutomation.git
+      recurse-submodules: true
+      ref: main
     
     
 

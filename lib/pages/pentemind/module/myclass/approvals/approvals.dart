@@ -58,10 +58,8 @@ class _ApprovalsScreenState extends State<ApprovalsScreen>
 
     WidgetsBinding.instance.addObserver(this);
     //getUserInfo();
-    DateTime fromDate =
-        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    DateTime toDate =
-        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    
+    DateTime toDate =DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
     _fromDateController.text = DateFormat("yyyy-MM-dd").format(minDate);
     _toDateController.text = DateFormat("yyyy-MM-dd").format(toDate);
     loadData();
@@ -97,12 +95,14 @@ class _ApprovalsScreenState extends State<ApprovalsScreen>
 
 //     debugPrint('Teacher id $uid');
     //_dayController.text = '1';
-    var childAdvancementSummery = prefs.getString(getId());
-    if (true || childAdvancementSummery == null) {
-      getApprovals();
-    } else {
-      getLocalData(childAdvancementSummery);
-    }
+    //var childAdvancementSummery = prefs.getString(getId());
+    getApprovals();
+    ///*** DISABLE DEAD CODE */
+    // if (true || childAdvancementSummery == null) {
+    //   getApprovals();
+    // } else {
+    //   getLocalData(childAdvancementSummery);
+    // }
   }
 
   getLocalData(data) {
