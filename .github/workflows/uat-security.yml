@@ -145,22 +145,20 @@ jobs:
           fi
           echo "✅ SonarQube configuration found."
 
-      - name: Run SonarQube Scan
+      - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY || github.event.repository.name }}
-            -Dsonar.projectName=${{ github.event.repository.name }}
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+            -Dsonar.projectName=eKidzeeAppAutomation
             -Dsonar.sources=.
             -Dsonar.sourceEncoding=UTF-8
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
             -Dsonar.exclusions=**/.git/**,**/build/**,**/node_modules/**,**/.dart_tool/**,**/ios/Pods/**,**/android/.gradle/**,**/android/app/.cxx/**,**/firebase_options.dart,**/.github/**,**/web/sqflite_sw.js,**/ios/Runner/Info.plist,**/ios/Runner/Infomlzs.plist
-
   # ============================================================
   # 5. TRIVY DEPENDENCY / FILESYSTEM SCAN
   # ============================================================
