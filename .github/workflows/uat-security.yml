@@ -110,7 +110,7 @@ jobs:
             --exclude web/sqflite_sw.js \
             --exclude ios/Runner/Info.plist \
             --exclude ios/Runner/Infomlzs.plist \
-            --exclude android/app/.cxx
+            --exclude android/app/.cxx 
 
   # ============================================================
   # 4. SONARQUBE CODE QUALITY & SECURITY
@@ -158,7 +158,7 @@ jobs:
             -Dsonar.sourceEncoding=UTF-8
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
-            -Dsonar.exclusions=**/.git/**,**/build/**,**/node_modules/**,**/.dart_tool/**,**/ios/Pods/**,**/android/.gradle/**,**/android/app/.cxx/**,**/.github/**,**/firebase_options.dart,**/web/sqflite_sw.js,**/ios/Runner/Info.plist,**/ios/Runner/Infomlzs.plist,**/ios/install.sh
+            -Dsonar.exclusions=**/.git/**,**/build/**,**/node_modules/**,**/.dart_tool/**,**/ios/Pods/**,**/android/.gradle/**,**/android/app/.cxx/**,**/.github/**,**/firebase_options.dart,**/web/sqflite_sw.js,**/ios/Runner/Info.plist,**/ios/Runner/Infomlzs.plist,**/ios/install.sh,**/ios/Runner/Vuforia,**/ios/Runner/Infomlzs.plist,**/Vuforia/**,\**/VuforiaEngine.framework/**,\**/*.framework/**,\**/*.xcframework/**,\**/*.a,\**/*.dylib,\**/*.so,\**/*.aar,\**/*.ipa,\**/*.apk,\**/*.aab,\**/*.bin
   # ============================================================
   # 5. TRIVY DEPENDENCY / FILESYSTEM SCAN
   # ============================================================
