@@ -1,45 +1,55 @@
-name: Flutter Kidzee CI/CD
+
+name: AI Security Check for Pull Requests
 
 on:
-  push:
+  pull_request:
     branches:
-      - master
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
-  build:
+  ai_security_check_for_pull_requests:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          flutter-version: '3.24.0'   # set your Flutter version here
-      - name: Configure Git for Private Repos
-        run: | 
-          git config --global url."https://${{ secrets.GITHUB_TOKEN }}:@github.com/".insteadOf "https://github.com/"
+          node-version: 22
+          cache: npm
 
       - name: Install dependencies
-        run: flutter pub get
+        run: npm ci
 
-      - name: Build Kidzee APK
-        run: flutter build apk --flavor kidzee --release
+      - name: AI security and privacy analysis
+        id: ai_security_check
+        uses: obetomuniz/ai-security-check-for-pull-requests-action@v1.0.0
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_REPOSITORY: ${{ github.repository }}
+          GH_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.number }}
+          OPENAI_TOKEN: ${{ secrets.OPENAI_TOKEN }}
 
-      - name: Build Kidzee App Bundle (AAB)
-        run: flutter build appbundle --flavor kidzee --release
-
-      - name: Upload Kidzee APK
-        uses: actions/upload-artifact@v4
+      - name: Comment on pull request
+        uses: actions/github-script@v7
+        env:
+          PR_COMMENT: ${{ steps.ai_security_check.outputs.pr_comment }}
         with:
-          name: kidzee-apk
-          path: build/app/outputs/flutter-apk/app-kidzee-release.apk
-          if-no-files-found: error
+          github-token: ${{ secrets.GH_TOKEN }}
+          script: |
+            const prComment = process.env.PR_COMMENT ||
+              "No security or privacy issues found.";
 
-      - name: Upload Kidzee AAB
-        uses: actions/upload-artifact@v4
-        with:
-          name: kidzee-aab
-          path: build/app/outputs/bundle/kidzeeRelease/app-kidzee-release.aab
-          if-no-files-found: error
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: prComment
+            });
